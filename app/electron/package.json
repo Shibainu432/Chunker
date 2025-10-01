@@ -38,7 +38,7 @@
       ],
       "extraResources": [
         {
-          "from": "../../flathub",
+          "from": "./flathub",
           "to": "flathub"
         }
       ]
