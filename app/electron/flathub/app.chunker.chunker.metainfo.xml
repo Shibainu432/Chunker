@@ -5,7 +5,7 @@
   <developer id="app.chunker">
     <name>Hive Games</name>
   </developer>
-  <summary>Convert Minceraft worlds between edtions</summary>
+  <summary>Convert Minecraft worlds between editions</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
   <url type="homepage">https://chunker.app</url>
