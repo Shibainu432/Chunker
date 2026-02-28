@@ -6,22 +6,24 @@ RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY . .
 
-# Fake Git Identity (fixes Exit 128)
+# Fake Git Identity
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name" && \
     git config --global --add safe.directory /app
 
-# Initialize a fresh git repo inside the container if one isn't found
-# This prevents the ":cli:jar" task from failing when it looks for a version
+# Initialize a fresh git repo to keep the build tasks happy
 RUN git init && git add . && git commit -m "internal build" || true
 
 # Fix line endings
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
-# Build the app - added -Pversion=1.0.0 to bypass git versioning
+# Build the app - setting version to 1.0.0
 RUN ./gradlew build -x test --no-daemon -Pversion=1.0.0
+
+# Verify where the jar is and rename it to something simple for the CMD to find
+RUN find . -name "*.jar" && cp cli/build/libs/chunker-cli-1.0.0-all.jar /app/chunker.jar || cp cli/build/libs/chunker-cli-all.jar /app/chunker.jar
 
 EXPOSE 10000
 
-# Path for the Chunker jar
-CMD ["java", "-Xmx400m", "-jar", "cli/build/libs/chunker-cli-all.jar", "messenger"]
+# Use the simplified filename we just created
+CMD ["java", "-Xmx400m", "-jar", "/app/chunker.jar", "messenger"]
