@@ -81,8 +81,17 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    let fullPath = window.chunker.getPathForFile(file.file);
-                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    // SAFE PATH: Check for desktop bridge, otherwise use web path
+                    let fullPath = (window.chunker && window.chunker.getPathForFile)
+                        ? window.chunker.getPathForFile(file.file)
+                        : file.path;
+
+                    //SAFETY GUARD: This replicates your original line 85
+                    if (fullPath && fullpPath.indecOf("level.dat") !== -1) {
+                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    } else {
+                        level = "/";
+                    }
                 }
             }
             if (level) {
