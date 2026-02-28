@@ -81,10 +81,20 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // 1. SAFE PATH SELECTION
+                    // 1. Use the specific loop 'file', not 'files[0]'
+                    // 2. Fallback to file.path (the relative path in browser)
                     let fullPath = (window.chunker && window.chunker.getPathForFile) 
                         ? window.chunker.getPathForFile(file.file) 
-                        : file.path; // Use the relative path in browser mode
+                        : file.path;
+
+                    // 3. Only try to cut the string if level.dat actually exists in the path
+                    if (fullPath && fullPath.includes("level.dat")) {
+                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    } else {
+                        level = "/"; 
+                    }
+                }
+            }
 
                     // 2. SAFE SUBSTRING CHECK
                     if (fullPath.includes("level.dat")) {
