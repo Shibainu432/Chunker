@@ -26,5 +26,5 @@ RUN find cli/build/libs/ -name "*.jar" -exec cp {} /app/chunker.jar \;
 
 EXPOSE 10000
 
-# Use the simplified filename
-CMD ["java", "-Xmx400m", "-jar", "/app/chunker.jar", "messenger"]
+# Use this for your CMD line
+CMD ["java", "-Xmx400m", "-jar", "/app/chunker.jar", "messenger", "--port", "10000"]
