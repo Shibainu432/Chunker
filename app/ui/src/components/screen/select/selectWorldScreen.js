@@ -81,20 +81,38 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // 1. Use the specific loop 'file', not 'files[0]'
-                    // 2. Fallback to file.path (the relative path in browser)
+                    // SAFE PATH: Use the loop variable 'file', not 'files[0]'
                     let fullPath = (window.chunker && window.chunker.getPathForFile) 
                         ? window.chunker.getPathForFile(file.file) 
                         : file.path;
 
-                    // 3. Only try to cut the string if level.dat actually exists in the path
-                    if (fullPath && fullPath.includes("level.dat")) {
+                    // SAFE CUT: Only try to find level.dat if it exists in the string
+                    if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
-                        level = "/"; 
+                        level = "browser_upload"; 
                     }
                 }
             }
+            if (level) {
+                self.setState({filePath: level, filePathDirectory: true, processing: false});
+            } else {
+                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
+                this.setState({selected: false, detecting: false, processing: false});
+            }
+        } else {
+            // SINGLE FILE UPLOAD (Archive)
+            let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                ? window.chunker.getPathForFile(files[0].file) 
+                : files[0].file.name; 
+
+            this.setState({
+                selected: files[0].path.split('/')[1] || files[0].file.name, 
+                filePath: fullPath, 
+                filePathDirectory: false
+            });
+        }
+    };
 
                     // 2. SAFE SUBSTRING CHECK
                     if (fullPath.includes("level.dat")) {
