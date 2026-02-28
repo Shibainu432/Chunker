@@ -72,11 +72,6 @@ handleData = (files) => {
 
         if (files.length > 1) {
             this.setState({
-handleData = (files) => {
-        let self = this;
-
-        if (files.length > 1) {
-            this.setState({
                 selected: files[0].path.split('/')[1],
                 processing: true,
                 processingPercentage: 0
@@ -86,12 +81,12 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // SAFE PATH: Check if chunker bridge exists (Electron), otherwise fallback to the file path (Browser)
+                    // Check if chunker bridge exists (Desktop), otherwise fallback to the file path (Browser)
                     let fullPath = (window.chunker && window.chunker.getPathForFile) 
                         ? window.chunker.getPathForFile(file.file) 
                         : file.path;
 
-                    // SAFETY GUARD: Only try to cut the string if level.dat actually exists in the path
+                    // Only try to cut the string if level.dat actually exists in the path
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
