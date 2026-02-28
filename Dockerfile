@@ -17,11 +17,12 @@ RUN git init && git add . && git commit -m "internal build" || true
 # Fix line endings
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
-# Build the app
-RUN ./gradlew build -x test --no-daemon
+# Build the app - Added 'clean' and skipped the Electron/App packaging 
+# to focus only on the CLI jar we actually need.
+RUN ./gradlew :cli:shadowJar :cli:jar --no-daemon
 
-# Use the exact path found in the previous error log
-RUN cp cli/build/libs/chunker-cli-1.13.0.jar /app/chunker.jar
+# Find the jar again (it might be 1.13.0 or 1.0.0 depending on the previous run)
+RUN find cli/build/libs/ -name "*.jar" -exec cp {} /app/chunker.jar \;
 
 EXPOSE 10000
 
