@@ -72,7 +72,7 @@ handleData = (files) => {
 
         if (files.length > 1) {
             this.setState({
-    handleData = (files) => {
+handleData = (files) => {
         let self = this;
 
         if (files.length > 1) {
@@ -86,37 +86,38 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // SAFE PATH: Use the loop variable 'file'
+                    // SAFE PATH: Check if chunker bridge exists (Electron), otherwise fallback to the file path (Browser)
                     let fullPath = (window.chunker && window.chunker.getPathForFile) 
                         ? window.chunker.getPathForFile(file.file) 
                         : file.path;
 
-                    // SAFETY GUARD: Check if level.dat exists before cutting string
+                    // SAFETY GUARD: Only try to cut the string if level.dat actually exists in the path
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
-                       level = "/";
-                   }
-               }
-           }
-           if (level) {
-               self.setState({filePath: level, filePathDirectory: true, processing: false});
-           } else {
-               this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
-               this.setState({selected: false, detecting: false, processing: false});
-           }
-       } else {
-           // SINGLE FILE UPLOAD (Browser Fallback)
-           let fullPath = (window.chunker && window.chunker.getPathForFile) 
-               ? window.chunker.getPathForFile(files[0].file) 
-               : files[0].file.name; 
+                        level = "/"; 
+                    }
+                }
+            }
+            if (level) {
+                self.setState({filePath: level, filePathDirectory: true, processing: false});
+            } else {
+                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
+                this.setState({selected: false, detecting: false, processing: false});
+            }
+        } else {
+            // SINGLE FILE UPLOAD: Browser Fallback
+            let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                ? window.chunker.getPathForFile(files[0].file) 
+                : files[0].file.name; 
 
-           this.setState({
-               selected: files[0].path.split('/')[1] || files[0].file.name, 
-               filePath: fullPath, 
-               filePathDirectory: false
-           });
-       }
+            this.setState({
+                selected: files[0].path.split('/')[1] || files[0].file.name, 
+                filePath: fullPath, 
+                filePathDirectory: false
+            });
+        }
+    };
  };
                 filePath: fullPath, 
                 filePathDirectory: false
