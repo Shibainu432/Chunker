@@ -21,7 +21,7 @@ RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && \
     find cli/build/libs/ -name "*.jar" -exec cp {} /app/chunker.jar \;
 
 # Install Express for our wrapper
-RUN npm init -y && npm install express
+RUN npm init -y && npm install express cors
 
 EXPOSE 10000
 
