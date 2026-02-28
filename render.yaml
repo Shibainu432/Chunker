@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: chunker-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
