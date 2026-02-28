@@ -92,10 +92,17 @@ export class SelectWorldScreen extends BaseScreen {
                 this.setState({selected: false, detecting: false, processing: false});
             }
         } else {
-            let fullPath = window.chunker.getPathForFile(files[0].file);
-            this.setState({selected: files[0].path.split('/')[1], filePath: fullPath, filePathDirectory: false});
+            // Check if we are in a browser (where window.chunker is missing)
+            let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                ? window.chunker.getPathForFile(files[0].file) 
+                : files[0].file.name; // Fallback to filename for web uploads
+
+            this.setState({
+                selected: files[0].path.split('/')[1] || files[0].file.name, 
+                filePath: fullPath, 
+                filePathDirectory: false
+            });
         }
-    };
 
     // Functions from https://gist.github.com/is-already-taken/0aa646eb5f164a656a422fc75bc7a2c6
     getFiles = (entriesList) => {
