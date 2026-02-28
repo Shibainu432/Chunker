@@ -1,12 +1,15 @@
 FROM eclipse-temurin:17-jdk
 
-# Install Git (required for the Gradle build)
+# Install Git
 RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
 
-# Fix line endings for Linux
+# --- NEW LINE BELOW TO FIX EXIT VALUE 128 ---
+RUN git config --global --add safe.directory /app
+
+# Fix line endings
 RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
 
 # Build the app
