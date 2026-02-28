@@ -1,6 +1,18 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:17-jdk
+
+# Install Git (required for the Gradle build)
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY . .
-RUN chmod +x gradlew && ./gradlew build -x test
-EXPOSE 8080
-CMD ["java", "-Xmx512m", "-jar", "cli/build/libs/chunker-cli.jar", "messenger"]
+
+# Fix line endings for Linux
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
+
+# Build the app
+RUN ./gradlew build -x test --no-daemon
+
+EXPOSE 10000
+
+# Path for the Chunker jar
+CMD ["java", "-Xmx400m", "-jar", "cli/build/libs/chunker-cli-all.jar", "messenger"]
