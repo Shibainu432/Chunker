@@ -1,0 +1,41 @@
+{
+  "files": {
+    "main.css": "/Chunker/static/css/main.14249760.css",
+    "main.js": "/Chunker/static/js/main.163c4e60.js",
+    "static/media/noto-sans-v9-latin-italic.svg": "/Chunker/static/media/noto-sans-v9-latin-italic.975e8612e57ed464c5a4.svg",
+    "static/media/noto-sans-v9-latin-regular.svg": "/Chunker/static/media/noto-sans-v9-latin-regular.ab6e42380f2a05e00234.svg",
+    "static/media/noto-sans-v9-latin-700italic.svg": "/Chunker/static/media/noto-sans-v9-latin-700italic.e0f0696def0ed607d7af.svg",
+    "static/media/noto-sans-v9-latin-700.svg": "/Chunker/static/media/noto-sans-v9-latin-700.ccb3b908f9426ebea3ef.svg",
+    "static/media/noto-sans-v9-latin-700.ttf": "/Chunker/static/media/noto-sans-v9-latin-700.fd2ef6b03485d6340c44.ttf",
+    "static/media/noto-sans-v9-latin-regular.ttf": "/Chunker/static/media/noto-sans-v9-latin-regular.911a4479e3e8b9d11ba4.ttf",
+    "static/media/noto-sans-v9-latin-700italic.ttf": "/Chunker/static/media/noto-sans-v9-latin-700italic.2581899904f336e68867.ttf",
+    "static/media/noto-sans-v9-latin-italic.ttf": "/Chunker/static/media/noto-sans-v9-latin-italic.887dcf07883e8dc390ee.ttf",
+    "static/media/metropolis-bold-webfont.woff": "/Chunker/static/media/metropolis-bold-webfont.8694e002b08ba32ce413.woff",
+    "static/media/noto-sans-v9-latin-700italic.woff": "/Chunker/static/media/noto-sans-v9-latin-700italic.ad4b623a73ca5e40a556.woff",
+    "static/media/noto-sans-v9-latin-700.woff": "/Chunker/static/media/noto-sans-v9-latin-700.689575ff4d8e5e6d39e6.woff",
+    "static/media/noto-sans-v9-latin-regular.woff": "/Chunker/static/media/noto-sans-v9-latin-regular.bedd9dda935a164e00f0.woff",
+    "static/media/metropolis-medium-webfont.woff": "/Chunker/static/media/metropolis-medium-webfont.314b6ae16c6e91b0575f.woff",
+    "static/media/metropolis-regular-webfont.woff": "/Chunker/static/media/metropolis-regular-webfont.58feaa0261f4804f6ecd.woff",
+    "static/media/noto-sans-v9-latin-italic.woff": "/Chunker/static/media/noto-sans-v9-latin-italic.9c21b810e75dfe788308.woff",
+    "static/media/noto-sans-v9-latin-700italic.eot": "/Chunker/static/media/noto-sans-v9-latin-700italic.3487562b0b4811e9b03f.eot",
+    "static/media/noto-sans-v9-latin-700.eot": "/Chunker/static/media/noto-sans-v9-latin-700.2eb8d41c7c4a78e60acc.eot",
+    "static/media/noto-sans-v9-latin-regular.eot": "/Chunker/static/media/noto-sans-v9-latin-regular.d94baf4d793438f78dcf.eot",
+    "static/media/noto-sans-v9-latin-italic.eot": "/Chunker/static/media/noto-sans-v9-latin-italic.a7f2a0a85acfd91b2edc.eot",
+    "static/media/noto-sans-v9-latin-700italic.woff2": "/Chunker/static/media/noto-sans-v9-latin-700italic.155268b05af0bafb2955.woff2",
+    "static/media/noto-sans-v9-latin-700.woff2": "/Chunker/static/media/noto-sans-v9-latin-700.0674cdf070471e6f6bd0.woff2",
+    "static/media/noto-sans-v9-latin-regular.woff2": "/Chunker/static/media/noto-sans-v9-latin-regular.7f65400c6b61f9dd1187.woff2",
+    "static/media/noto-sans-v9-latin-italic.woff2": "/Chunker/static/media/noto-sans-v9-latin-italic.41a9274088cbb1d40b71.woff2",
+    "static/media/metropolis-medium-webfont.woff2": "/Chunker/static/media/metropolis-medium-webfont.0bd5259a55227552db8a.woff2",
+    "static/media/metropolis-bold-webfont.woff2": "/Chunker/static/media/metropolis-bold-webfont.08845d7d8a64ab8204ff.woff2",
+    "static/media/metropolis-regular-webfont.woff2": "/Chunker/static/media/metropolis-regular-webfont.94a2963d0efd704290d5.woff2",
+    "static/media/minecraft_five_bold-webfont.woff": "/Chunker/static/media/minecraft_five_bold-webfont.e31888d690f5173dd969.woff",
+    "static/media/minecraft_five_bold-webfont.woff2": "/Chunker/static/media/minecraft_five_bold-webfont.fd7f607c98c07acb670d.woff2",
+    "index.html": "/Chunker/index.html",
+    "main.14249760.css.map": "/Chunker/static/css/main.14249760.css.map",
+    "main.163c4e60.js.map": "/Chunker/static/js/main.163c4e60.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.14249760.css",
+    "static/js/main.163c4e60.js"
+  ]
+}
