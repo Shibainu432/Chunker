@@ -67,7 +67,7 @@ export class SelectWorldScreen extends BaseScreen {
         }));
     };
 
-    handleData = (files) => {
+handleData = (files) => {
         let self = this;
 
         if (files.length > 1) {
@@ -81,10 +81,17 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                // Check if chunker bridge exists (Electron), otherwise fallback to the file name (Browser)
-                let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                ? window.chunker.getPathForFile(files[0].file) : (files[0].file.name || "uploaded_world");
-                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    // 1. SAFE PATH SELECTION
+                    let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                        ? window.chunker.getPathForFile(file.file) 
+                        : file.path; // Use the relative path in browser mode
+
+                    // 2. SAFE SUBSTRING CHECK
+                    if (fullPath.includes("level.dat")) {
+                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    } else {
+                        level = "/"; // Fallback for web-based folder structures
+                    }
                 }
             }
             if (level) {
@@ -97,7 +104,7 @@ export class SelectWorldScreen extends BaseScreen {
             // Check if we are in a browser (where window.chunker is missing)
             let fullPath = (window.chunker && window.chunker.getPathForFile) 
                 ? window.chunker.getPathForFile(files[0].file) 
-                : files[0].file.name; // Fallback to filename for web uploads
+                : files[0].file.name; 
 
             this.setState({
                 selected: files[0].path.split('/')[1] || files[0].file.name, 
@@ -105,6 +112,7 @@ export class SelectWorldScreen extends BaseScreen {
                 filePathDirectory: false
             });
         }
+    };
 
     // Functions from https://gist.github.com/is-already-taken/0aa646eb5f164a656a422fc75bc7a2c6
     getFiles = (entriesList) => {
