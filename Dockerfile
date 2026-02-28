@@ -1,30 +1,29 @@
 FROM eclipse-temurin:17-jdk
 
-# Install Git
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# Install Node.js and Git
+RUN apt-get update && apt-get install -y git curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
 
-# Fake Git Identity
-RUN git config --global user.email "you@example.com" && \
+# Initialize Git for Gradle
+RUN git config --global user.email "loumencai@gmail.com" && \
     git config --global user.name "Your Name" && \
-    git config --global --add safe.directory /app
+    git config --global --add safe.directory /app && \
+    git init && git add . && git commit -m "build" || true
 
-# Initialize a fresh git repo
-RUN git init && git add . && git commit -m "internal build" || true
+# Build Java CLI
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && \
+    ./gradlew :cli:shadowJar :cli:jar --no-daemon && \
+    find cli/build/libs/ -name "*.jar" -exec cp {} /app/chunker.jar \;
 
-# Fix line endings
-RUN sed -i 's/\r$//' gradlew && chmod +x gradlew
-
-# Build the app - Added 'clean' and skipped the Electron/App packaging 
-# to focus only on the CLI jar we actually need.
-RUN ./gradlew :cli:shadowJar :cli:jar --no-daemon
-
-# Find the jar again (it might be 1.13.0 or 1.0.0 depending on the previous run)
-RUN find cli/build/libs/ -name "*.jar" -exec cp {} /app/chunker.jar \;
+# Install Express for our wrapper
+RUN npm init -y && npm install express
 
 EXPOSE 10000
 
-# Use this for your CMD line
-CMD ["java", "-Xmx400m", "-jar", "/app/chunker.jar", "messenger", "--port", "10000"]
+# Run the wrapper instead of the Jar directly
+CMD ["node", "server.js"]
