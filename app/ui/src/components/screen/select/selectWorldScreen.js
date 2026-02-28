@@ -67,7 +67,7 @@ export class SelectWorldScreen extends BaseScreen {
         }));
     };
 
-handleData = (files) => {
+    handleData = (files) => {
         let self = this;
 
         if (files.length > 1) {
@@ -81,17 +81,8 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // Check if chunker bridge exists (Desktop), otherwise fallback to the file path (Browser)
-                    let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                        ? window.chunker.getPathForFile(file.file) 
-                        : file.path;
-
-                    // Only try to cut the string if level.dat actually exists in the path
-                    if (fullPath && fullPath.indexOf("level.dat") !== -1) {
-                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                    } else {
-                        level = "/"; 
-                    }
+                    let fullPath = window.chunker.getPathForFile(file.file);
+                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                 }
             }
             if (level) {
@@ -101,50 +92,8 @@ handleData = (files) => {
                 this.setState({selected: false, detecting: false, processing: false});
             }
         } else {
-            // SINGLE FILE UPLOAD: Browser Fallback
-            let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                ? window.chunker.getPathForFile(files[0].file) 
-                : files[0].file.name; 
-
-            this.setState({
-                selected: files[0].path.split('/')[1] || files[0].file.name, 
-                filePath: fullPath, 
-                filePathDirectory: false
-            });
-        }
-    };
- };
-                filePath: fullPath, 
-                filePathDirectory: false
-            });
-        }
-    };
-
-                    // 2. SAFE SUBSTRING CHECK
-                    if (fullPath.includes("level.dat")) {
-                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                    } else {
-                        level = "/"; // Fallback for web-based folder structures
-                    }
-                }
-            }
-            if (level) {
-                self.setState({filePath: level, filePathDirectory: true, processing: false});
-            } else {
-                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
-                this.setState({selected: false, detecting: false, processing: false});
-            }
-        } else {
-            // Check if we are in a browser (where window.chunker is missing)
-            let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                ? window.chunker.getPathForFile(files[0].file) 
-                : files[0].file.name; 
-
-            this.setState({
-                selected: files[0].path.split('/')[1] || files[0].file.name, 
-                filePath: fullPath, 
-                filePathDirectory: false
-            });
+            let fullPath = window.chunker.getPathForFile(files[0].file);
+            this.setState({selected: files[0].path.split('/')[1], filePath: fullPath, filePathDirectory: false});
         }
     };
 
