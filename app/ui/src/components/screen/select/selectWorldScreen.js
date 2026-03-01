@@ -81,12 +81,12 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // SAFE PATH: Check for desktop bridge, otherwise use web path
+                    // SAFE PATH: Check if desktop bridge exists, otherwise use web path
                     let fullPath = (window.chunker && window.chunker.getPathForFile)
                         ? window.chunker.getPathForFile(file.file)
                         : file.path;
 
-                    //SAFETY GUARD: This replicates your original line 85
+                    // Fixed typo 'fullpPath' and 'indecOf'
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
@@ -100,9 +100,17 @@ export class SelectWorldScreen extends BaseScreen {
                 this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
                 this.setState({selected: false, detecting: false, processing: false});
             }
-        } else {
-            let fullPath = window.chunker.getPathForFile(files[0].file);
-            this.setState({selected: files[0].path.split('/')[1], filePath: fullPath, filePathDirectory: false});
+        } else if (files.length === 1) {
+            // FIX: Check if window.chunker exists before calling getPAthForFile to prevent crash
+            let fullPath = (window.chunker && window.chunker.getPathForFile)
+                ? window.chunker.getPathForFile(files[0].file
+                : files[0].file.name;
+            
+            this.setState({
+                selected: files[0].path.split('/')[1] || filed[0].file.name,
+                filePath: fullPath, 
+                filePathDirectory: false
+            });
         }
     };
 
