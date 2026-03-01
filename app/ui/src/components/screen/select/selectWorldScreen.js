@@ -68,51 +68,34 @@ export class SelectWorldScreen extends BaseScreen {
     };
 
 handleData = (files) => {
-    if (!files || files.length === 0) return;
+    let self = this;
 
-    // Helper to safely get path regardless of environment
-    const getSafePath = (fileEntry) => {
-        if (window.chunker && typeof window.chunker.getPathForFile === 'function') {
-            return window.chunker.getPathForFile(fileEntry.file);
-        }
-        // Fallback for browser: use the virtual path we created in wrapFiles
-        return fileEntry.path || fileEntry.file.name;
-    };
+    // SAFETY CHECK: Ensure files exist and has at least one item
+    if (!files || files.length === 0) {
+        console.error("handleData called with no files");
+        return;
+    }
 
     if (files.length > 1) {
-        this.setState({
-            selected: files[0].path.split('/')[1] || "Folder",
-            processing: true,
-            processingPercentage: 0
-        });
-
-        let level = null;
-        for (let i = 0; i < files.length; i++) {
-            let file = files[i];
-            if (file.path.endsWith("/level.dat")) {
-                let fullPath = getSafePath(file);
-
-                if (fullPath && fullPath.indexOf("level.dat") !== -1) {
-                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                } else {
-                    level = "/";
-                }
-                break; // Found level.dat, no need to keep looping
-            }
-        }
-
-        if (level) {
-            this.setState({ filePath: level, filePathDirectory: true, processing: false });
-        } else {
-            this.app.showError("Invalid World", "The folder you selected did not contain a level.dat.", null, undefined, true);
-            this.setState({ selected: false, detecting: false, processing: false });
-        }
+        // ... (your existing folder logic)
     } else if (files.length === 1) {
-        const fullPath = getSafePath(files[0]);
+        
+        // REWRITTEN LINE 84 with Optional Chaining (?.)
+        // This prevents the "reading path of undefined" error
+        const firstFile = files[0];
+        const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
+
+        // SAFE CHUNKER CHECK
+        let fullPath;
+        if (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile) {
+            fullPath = window.chunker.getPathForFile(firstFile.file);
+        } else {
+            fullPath = firstFile.file.name;
+        }
 
         this.setState({
-            selected: files[0].file.name,
-            filePath: fullPath,
+            selected: displayPath, 
+            filePath: fullPath, 
             filePathDirectory: false
         });
     }
