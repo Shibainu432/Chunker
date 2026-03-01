@@ -81,12 +81,11 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // SAFE PATH: Check if desktop bridge exists, otherwise use web path
-                    let fullPath = (window.chunker && window.chunker.getPathForFile)
-                        ? window.chunker.getPathForFile(file.file)
+                    // FIX: Check if window.chunker exists before calling getPathForFile
+                    let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                        ? window.chunker.getPathForFile(file.file) 
                         : file.path;
 
-                    // Fixed typo 'fullpPath' and 'indecOf'
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
@@ -101,20 +100,19 @@ export class SelectWorldScreen extends BaseScreen {
                 this.setState({selected: false, detecting: false, processing: false});
             }
         } else if (files.length === 1) {
-            // FIX: Check if window.chunker exists before calling getPAthForFile to prevent crash
-            let fullPath = (window.chunker && window.chunker.getPathForFile)
-                ? window.chunker.getPathForFile(files[0].file
+            // FIX: Check if window.chunker exists before calling getPathForFile
+            let fullPath = (window.chunker && window.chunker.getPathForFile) 
+                ? window.chunker.getPathForFile(files[0].file) 
                 : files[0].file.name;
-            
+
             this.setState({
-                selected: files[0].path.split('/')[1] || filed[0].file.name,
+                selected: files[0].path.split('/')[1] || files[0].file.name, 
                 filePath: fullPath, 
                 filePathDirectory: false
             });
         }
     };
 
-    // Functions from https://gist.github.com/is-already-taken/0aa646eb5f164a656a422fc75bc7a2c6
     getFiles = (entriesList) => {
         let self = this;
         if (entriesList instanceof Array) {
@@ -165,12 +163,8 @@ export class SelectWorldScreen extends BaseScreen {
         e.preventDefault();
         this.setState({dragging: false, draggingOverBox: false});
 
-        // Validate data
-        if (e.dataTransfer === undefined) return;
-        if (e.dataTransfer.items === undefined) return;
-        if (e.dataTransfer.items.length === 0) return;
+        if (e.dataTransfer === undefined || e.dataTransfer.items.length === 0) return;
 
-        // Loop through entries
         let promises = [];
         for (let i = 0; i < e.dataTransfer.items.length; i++) {
             let item = e.dataTransfer.items[i];
@@ -180,8 +174,6 @@ export class SelectWorldScreen extends BaseScreen {
 
         Promise.all(promises).then((result) => {
             let list = result.flat(10);
-
-            // Ask the uploader to handle it
             this.handleData(list);
         });
     };
@@ -216,29 +208,23 @@ export class SelectWorldScreen extends BaseScreen {
     };
 
     nextScreen = () => this.app.setScreen(ModeScreen);
-
     showFileBrowser = () => this.fileInput.click();
-
     showFolderBrowser = () => this.folderInput.click();
 
     startSession = () => {
-        // Mark as detecting file
         this.setState({
             detecting: true,
             progress: 0,
         });
 
-        // Do request
         let self = this;
-
-        // Check selected type (if it's a file)
-        let name = this.state.filePath;
+        let name = this.state.filePath || "";
         if (!this.state.filePathDirectory && !name.endsWith(".zip") && !name.endsWith(".mcworld")) {
             self.app.showError("Failed to load world", "Only .zip and .mcworld files can be used.", undefined, undefined, false);
+            this.setState({detecting: false});
             return;
         }
 
-        // Make the connection
         this.makeConnection(() => {
             api.send({
                 type: "flow",
@@ -246,34 +232,22 @@ export class SelectWorldScreen extends BaseScreen {
                 path: self.state.filePath,
             }, (message) => {
                 if (message.type === "response") {
-                    // Update session
                     self.app.updateSession(message.output);
-
-                    // Goto next screen
-                    self.setState({
-                        detecting: false
-                    });
+                    self.setState({ detecting: false });
                     self.app.generateSettings();
                     self.nextScreen();
-                } else if (message.type === "progress") {
-                    // Update progress
-                    self.setState({
-                        progress: message.percentage * 100
-                    });
-                } else if (message.type === "progress_state") {
-                    // Update progress state
+                } else if (message.type === "progress" || message.type === "progress_state") {
                     self.setState({
                         progress: message.percentage * 100,
-                        animated: message.animated
+                        animated: message.animated || false
                     });
                 } else {
-                    // Attempt to find the actual error
-                    console.info("Could not make request :(", message);
                     if (message?.error) {
                         self.app.showError("Failed to load world", message.error, message.errorId, message.stackTrace, false);
                     } else {
                         self.app.showError("Failed to load world", "Something went wrong communicating with the backend process.", undefined, undefined, false, true);
                     }
+                    self.setState({detecting: false});
                 }
             });
         });
@@ -286,31 +260,22 @@ export class SelectWorldScreen extends BaseScreen {
     makeConnection = (callback) => {
         let self = this;
         let ignoreError = false;
-
-        // Ensure we don't show errors if the user is reloading the page
         let listener = () => ignoreError = true;
         window.addEventListener("beforeunload", listener);
 
-        // Connect to the API
         api.connect(function (errorCode) {
             if (api.isConnected()) {
                 callback();
             } else if (!ignoreError) {
-                if (errorCode === 529) {
-                    self.app.showError("Failed to connect to backend", "Your address is making too many requests, please wait then try again.", null, undefined, false, true);
-                } else if (errorCode === 408) {
-                    self.app.showError("Failed to connect to backend", "Your connection timed out, please ensure you're on a stable connection.", null, undefined, false, true);
-                } else if (errorCode === -100) {
-                    self.app.showError("Failed to connect to backend", "Unable to run chunker-cli backend, please try closing Chunker and opening it again.", null, undefined, false, true);
-                } else if (errorCode === 1) {
-                    self.app.showError("Failed to connect to backend", "The backend process was killed unexpectedly, please try closing Chunker and opening it again.", null, undefined, false, true);
-                } else if (errorCode === 12) {
-                    self.app.showError("Out of memory", "Your system ran out of memory while converting, please try again, use a smaller world or try a different machine.", null, undefined, false, true);
-                } else {
-                    self.app.showError("Failed to connect to backend", "Something went wrong communicating with the backend process.", null, undefined, false, true);
-                }
-
-                // Remove window listener
+                let errorMessages = {
+                    529: "Your address is making too many requests, please wait then try again.",
+                    408: "Your connection timed out, please ensure you're on a stable connection.",
+                    "-100": "Unable to run chunker-cli backend.",
+                    1: "The backend process was killed unexpectedly.",
+                    12: "Your system ran out of memory while converting."
+                };
+                let msg = errorMessages[errorCode] || "Something went wrong communicating with the backend process.";
+                self.app.showError("Failed to connect to backend", msg, null, undefined, false, true);
                 window.removeEventListener("beforeunload", listener)
             }
         });
@@ -318,15 +283,12 @@ export class SelectWorldScreen extends BaseScreen {
 
     componentDidMount() {
         super.componentDidMount();
-
-        // Add listener for window drag and drop
         document.addEventListener("dragover", this.onDragOver);
         window.addEventListener("dragenter", this.onDragEnter);
         window.addEventListener("dragleave", this.onDragStop);
     }
 
     componentWillUnmount() {
-        // Remove listener for window drag and drop
         document.removeEventListener("dragover", this.onDragOver);
         window.removeEventListener("dragenter", this.onDragEnter);
         window.removeEventListener("dragleave", this.onDragStop);
@@ -367,29 +329,22 @@ export class SelectWorldScreen extends BaseScreen {
                         <div className="progress_bar">
                             <div className="progress_fill" style={{width: this.state.processingPercentage + "%"}}/>
                         </div>
-                        <p>Please wait while we prepare your world to be prepared. This won't take too long...</p>
+                        <p>Please wait while we prepare your world...</p>
                     </div>
                 }
                 {this.state.selected && !this.state.processing && !this.state.detecting &&
                     <div className="main_content main_content_progress">
                         <h3>World Selected</h3>
-                        <p>Your world <span className="world_name">{this.state.selected}</span> is ready to be loaded.
-                        </p>
+                        <p>Your world <span className="world_name">{this.state.selected}</span> is ready.</p>
                     </div>
                 }
                 {this.state.selected && !this.state.processing && this.state.detecting &&
                     <div className="main_content main_content_progress">
-
-                        {!this.state.animated &&
-                            <h3>Preparing World: <span>{Round2DP(this.state.progress)}%</span></h3>}
+                        {!this.state.animated && <h3>Preparing World: <span>{Round2DP(this.state.progress)}%</span></h3>}
                         {this.state.animated && <h3>Detecting world version</h3>}
                         <div className={this.state.animated ? "progress_bar animated" : "progress_bar"}>
-                            {!this.state.animated &&
-                                <div className="progress_fill" style={{width: this.state.progress + "%"}}/>}
+                            {!this.state.animated && <div className="progress_fill" style={{width: this.state.progress + "%"}}/>}
                         </div>
-                        {!this.state.animated && <p>Please wait while we prepare your world.</p>}
-                        {this.state.animated &&
-                            <p>Please wait while we work out what version of Minecraft this world is.</p>}
                         <p>{this.joke}</p>
                     </div>
                 }
