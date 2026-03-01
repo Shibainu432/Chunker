@@ -76,30 +76,55 @@ handleData = (files) => {
         return;
     }
 
-    if (files.length > 1) {
-        // ... (your existing folder logic)
-    } else if (files.length === 1) {
-        
-        // REWRITTEN LINE 84 with Optional Chaining (?.)
-        // This prevents the "reading path of undefined" error
-        const firstFile = files[0];
-        const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
+if (files.length > 1) {
+            this.setState({
+                selected: files[0].path.split('/')[1] || "Folder",
+                processing: true,
+                processingPercentage: 0
+            });
 
-        // SAFE CHUNKER CHECK
-        let fullPath;
-        if (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile) {
-            fullPath = window.chunker.getPathForFile(firstFile.file);
-        } else {
-            fullPath = firstFile.file.name;
+            let level = null;
+            for (let i = 0; i < files.length; i++) {
+                let file = files[i];
+                if (file.path.endsWith("/level.dat")) {
+                    
+                    // FIXED LINE 84 (Folder logic)
+                    let fullPath = (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile)
+                        ? window.chunker.getPathForFile(file.file)
+                        : file.path;
+
+                    if (fullPath && fullPath.indexOf("level.dat") !== -1) {
+                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                    } else {
+                        level = "/";
+                    }
+                    break;
+                }
+            }
+            if (level) {
+                this.setState({filePath: level, filePathDirectory: true, processing: false});
+            } else {
+                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
+                this.setState({selected: false, detecting: false, processing: false});
+            }
+        } else if (files.length === 1) {
+            const firstFile = files[0];
+            const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
+
+            // FIXED LINE (Single file logic)
+            let fullPath;
+            if (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile) {
+                fullPath = window.chunker.getPathForFile(firstFile.file);
+            } else {
+                fullPath = firstFile.file.name;
+            }
+
+            this.setState({
+                selected: displayPath,
+                filePath: fullPath,
+                filePathDirectory: false
+            });
         }
-
-        this.setState({
-            selected: displayPath, 
-            filePath: fullPath, 
-            filePathDirectory: false
-        });
-    }
-};
 
     getFiles = (entriesList) => {
         let self = this;
