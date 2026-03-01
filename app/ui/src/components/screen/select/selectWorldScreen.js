@@ -81,11 +81,12 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // FIX: Check if window.chunker exists before calling getPathForFile
-                    let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                        ? window.chunker.getPathForFile(file.file) 
+                    // FIXED: Safety check for window.chunker to prevent the crash
+                    let fullPath = (window.chunker && window.chunker.getPathForFile)
+                        ? window.chunker.getPathForFile(file.file)
                         : file.path;
 
+                    // FIXED: Corrected typos 'fullpPath' -> 'fullPath' and 'indecOf' -> 'indexOf'
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
@@ -100,9 +101,9 @@ export class SelectWorldScreen extends BaseScreen {
                 this.setState({selected: false, detecting: false, processing: false});
             }
         } else if (files.length === 1) {
-            // FIX: Check if window.chunker exists before calling getPathForFile
-            let fullPath = (window.chunker && window.chunker.getPathForFile) 
-                ? window.chunker.getPathForFile(files[0].file) 
+            // FIXED: Safety check for single-file upload
+            let fullPath = (window.chunker && window.chunker.getPathForFile)
+                ? window.chunker.getPathForFile(files[0].file)
                 : files[0].file.name;
 
             this.setState({
