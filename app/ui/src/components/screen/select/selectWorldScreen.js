@@ -68,51 +68,55 @@ export class SelectWorldScreen extends BaseScreen {
     };
 
 handleData = (files) => {
-        let self = this;
+    if (!files || files.length === 0) return;
 
-        if (files.length > 1) {
-            this.setState({
-                selected: files[0].path.split('/')[1],
-                processing: true,
-                processingPercentage: 0
-            });
-
-            let level = null;
-            for (let i = 0; i < files.length; i++) {
-                let file = files[i];
-                if (file.path.endsWith("/level.dat")) {
-                    // Check if we are in Electron (Desktop) or Browser
-                    let fullPath = (window.chunker && window.chunker.getPathForFile)
-                        ? window.chunker.getPathForFile(file.file)
-                        : file.path;
-
-                    // Fixed typos: 'fullpPath' -> 'fullPath' and 'indecOf' -> 'indexOf'
-                    if (fullPath && fullPath.indexOf("level.dat") !== -1) {
-                        level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                    } else {
-                        level = "/";
-                    }
-                }
-            }
-            if (level) {
-                self.setState({filePath: level, filePathDirectory: true, processing: false});
-            } else {
-                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
-                this.setState({selected: false, detecting: false, processing: false});
-            }
-        } else if (files.length === 1) {
-            // This is your Line 84 - Added window.chunker safety check
-            let fullPath = (window.chunker && window.chunker.getPathForFile)
-                ? window.chunker.getPathForFile(files[0].file)
-                : files[0].file.name;
-
-            this.setState({
-                selected: files[0].path.split('/')[1] || files[0].file.name, 
-                filePath: fullPath, 
-                filePathDirectory: false
-            });
+    // Helper to safely get path regardless of environment
+    const getSafePath = (fileEntry) => {
+        if (window.chunker && typeof window.chunker.getPathForFile === 'function') {
+            return window.chunker.getPathForFile(fileEntry.file);
         }
+        // Fallback for browser: use the virtual path we created in wrapFiles
+        return fileEntry.path || fileEntry.file.name;
     };
+
+    if (files.length > 1) {
+        this.setState({
+            selected: files[0].path.split('/')[1] || "Folder",
+            processing: true,
+            processingPercentage: 0
+        });
+
+        let level = null;
+        for (let i = 0; i < files.length; i++) {
+            let file = files[i];
+            if (file.path.endsWith("/level.dat")) {
+                let fullPath = getSafePath(file);
+
+                if (fullPath && fullPath.indexOf("level.dat") !== -1) {
+                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
+                } else {
+                    level = "/";
+                }
+                break; // Found level.dat, no need to keep looping
+            }
+        }
+
+        if (level) {
+            this.setState({ filePath: level, filePathDirectory: true, processing: false });
+        } else {
+            this.app.showError("Invalid World", "The folder you selected did not contain a level.dat.", null, undefined, true);
+            this.setState({ selected: false, detecting: false, processing: false });
+        }
+    } else if (files.length === 1) {
+        const fullPath = getSafePath(files[0]);
+
+        this.setState({
+            selected: files[0].file.name,
+            filePath: fullPath,
+            filePathDirectory: false
+        });
+    }
+};
 
     getFiles = (entriesList) => {
         let self = this;
