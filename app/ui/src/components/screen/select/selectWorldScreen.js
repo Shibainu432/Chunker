@@ -87,7 +87,7 @@ export class SelectWorldScreen extends BaseScreen {
                         : file.path;
 
                     //SAFETY GUARD: This replicates your original line 85
-                    if (fullPath && fullpPath.indecOf("level.dat") !== -1) {
+                    if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
                     } else {
                         level = "/";
