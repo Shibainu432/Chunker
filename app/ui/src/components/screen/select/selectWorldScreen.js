@@ -195,24 +195,67 @@ export class SelectWorldScreen extends BaseScreen {
                 </div>
                 {!this.state.selected && !this.state.dragging &&
                     <div className="main_content select_world">
-                        <button onClick={this.showFolderBrowser} className="gray_box">Choose world folder</button>
-                        <button onClick={this.showFileBrowser} className="gray_box">Select archive</button>
+                        <button onClick={this.showFolderBrowser} className="gray_box">
+                            Choose world folder
+                            <span>Select the world folder, we'll do the rest</span>
+                        </button>
+                        <button onClick={this.showFileBrowser} className="gray_box">
+                            Select archive
+                            <span>Supported types: .zip, .mcworld</span>
+                        </button>
                     </div>
                 }
-                {this.state.selected && !this.state.detecting &&
+                {!this.state.selected && this.state.dragging &&
+                    <div className="main_content select_world">
+                        <button
+                            className={"gray_box drag_box" + (this.state.draggingOverBox ? " dragged_over" : "")}
+                            onDrop={this.onDrop} onDragOver={this.onDragBoxOver} onDragLeave={this.onDragBoxStop}>
+                            Drop your worlds here!
+                            <span>Supported types: .zip, .mcworld and directories</span>
+                        </button>
+                    </div>
+                }
+                {this.state.selected && this.state.processing &&
+                    <div className="main_content main_content_progress">
+                        <h3>Preparing World: <span>{Round2DP(this.state.processingPercentage)}%</span></h3>
+                        <div className="progress_bar">
+                            <div className="progress_fill" style={{width: this.state.processingPercentage + "%"}}/>
+                        </div>
+                        <p>Please wait while we prepare your world to be prepared. This won't take too long...</p>
+                    </div>
+                }
+                {this.state.selected && !this.state.processing && !this.state.detecting &&
                     <div className="main_content main_content_progress">
                         <h3>World Selected</h3>
-                        <p>Your world <span className="world_name">{this.state.selected}</span> is ready.</p>
+                        <p>Your world <span className="world_name">{this.state.selected}</span> is ready to be loaded.
+                        </p>
                     </div>
                 }
-                {this.state.detecting &&
+                {this.state.selected && !this.state.processing && this.state.detecting &&
                     <div className="main_content main_content_progress">
-                        <h3>Preparing World...</h3>
-                        <div className="progress_bar"><div className="progress_fill" style={{width: this.state.progress + "%"}}/></div>
+
+                        {!this.state.animated &&
+                            <h3>Preparing World: <span>{Round2DP(this.state.progress)}%</span></h3>}
+                        {this.state.animated && <h3>Detecting world version</h3>}
+                        <div className={this.state.animated ? "progress_bar animated" : "progress_bar"}>
+                            {!this.state.animated &&
+                                <div className="progress_fill" style={{width: this.state.progress + "%"}}/>}
+                        </div>
+                        {!this.state.animated && <p>Please wait while we prepare your world.</p>}
+                        {this.state.animated &&
+                            <p>Please wait while we work out what version of Minecraft this world is.</p>}
+                        <p>{this.joke}</p>
                     </div>
                 }
                 <div className="bottombar">
-                    <button className="button green" disabled={this.state.detecting || !this.state.selected} onClick={this.startSession}>Start</button>
+                    {this.state.selected && !this.state.processing && !this.state.detecting &&
+                        <button className="button red" onClick={this.cancel}>Cancel</button>
+                    }
+                    <button
+                        className="button green"
+                        disabled={this.state.detecting || !this.state.selected || this.state.processing}
+                        onClick={this.startSession}>Start
+                    </button>
                 </div>
             </div>
         );
