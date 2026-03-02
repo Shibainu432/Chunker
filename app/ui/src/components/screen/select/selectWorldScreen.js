@@ -83,7 +83,6 @@ export class SelectWorldScreen extends BaseScreen {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    // Safe guard for Desktop vs Web
                     const chunkerApi = window.chunker;
                     let fullPath = (chunkerApi && chunkerApi.getPathForFile)
                         ? chunkerApi.getPathForFile(file.file)
@@ -107,7 +106,6 @@ export class SelectWorldScreen extends BaseScreen {
             const firstFile = files[0];
             const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
 
-            // Safe guard for Desktop vs Web
             const chunkerApi = window.chunker;
             let fullPath = (chunkerApi && chunkerApi.getPathForFile)
                 ? chunkerApi.getPathForFile(firstFile.file)
