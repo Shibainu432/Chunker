@@ -125,6 +125,7 @@ if (files.length > 1) {
                 filePathDirectory: false
             });
         }
+    };
 
     getFiles = (entriesList) => {
         let self = this;
