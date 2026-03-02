@@ -60,70 +60,43 @@ export class SelectWorldScreen extends BaseScreen {
 
     handleData = (files) => {
         if (!files || files.length === 0) return;
-
         if (files.length > 1) {
-            this.setState({
-                selected: files[0].path.split('/')[1] || "Folder",
-                processing: true,
-                processingPercentage: 0
-            });
-
+            this.setState({ selected: files[0].path.split('/')[1] || "Folder", processing: true, processingPercentage: 0 });
             let level = null;
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
                     const chunkerApi = window.chunker;
-                    let fullPath = (chunkerApi && chunkerApi.getPathForFile)
-                        ? chunkerApi.getPathForFile(file.file)
-                        : file.path;
-
+                    let fullPath = (chunkerApi && chunkerApi.getPathForFile) ? chunkerApi.getPathForFile(file.file) : file.path;
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
                         level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                    } else {
-                        level = "/";
-                    }
+                    } else { level = "/"; }
                     break;
                 }
             }
-            if (level) {
-                this.setState({filePath: level, filePathDirectory: true, processing: false});
-            } else {
-                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat", null, undefined, true);
+            if (level) { this.setState({filePath: level, filePathDirectory: true, processing: false}); } 
+            else {
+                this.app.showError("Invalid World", "No level.dat found.", null, undefined, true);
                 this.setState({selected: false, detecting: false, processing: false});
             }
         } else if (files.length === 1) {
             const firstFile = files[0];
             const chunkerApi = window.chunker;
-            let fullPath = (chunkerApi && chunkerApi.getPathForFile)
-                ? chunkerApi.getPathForFile(firstFile.file)
-                : (firstFile.file.name || firstFile.path);
-
-            this.setState({
-                selected: firstFile?.path?.split('/')[1] || "Unknown World",
-                filePath: fullPath,
-                filePathDirectory: false
-            });
+            let fullPath = (chunkerApi && chunkerApi.getPathForFile) ? chunkerApi.getPathForFile(firstFile.file) : (firstFile.file.name || firstFile.path);
+            this.setState({ selected: firstFile?.path?.split('/')[1] || "Unknown World", filePath: fullPath, filePathDirectory: false });
         }
     };
 
     getFiles = (entriesList) => {
-        if (entriesList instanceof Array) {
-            return Promise.all(entriesList.map(this.getFiles));
-        } else {
-            return new Promise((resolve, reject) => {
-                entriesList.file((file) => resolve({ path: entriesList.fullPath, file: file }), reject);
-            });
-        }
+        if (entriesList instanceof Array) { return Promise.all(entriesList.map(this.getFiles)); } 
+        else { return new Promise((resolve, reject) => { entriesList.file((file) => resolve({ path: entriesList.fullPath, file: file }), reject); }); }
     };
 
     readEntriesAsync = (rootEntry) => {
         let reader = rootEntry.createReader();
         let entriesArr = [];
         return new Promise((resolve, reject) => {
-            reader.readEntries((entries) => {
-                entries.forEach((entry) => { entriesArr.push(entry); });
-                resolve(entriesArr);
-            }, reject);
+            reader.readEntries((entries) => { entries.forEach((entry) => { entriesArr.push(entry); }); resolve(entriesArr); }, reject);
         });
     };
 
@@ -135,9 +108,7 @@ export class SelectWorldScreen extends BaseScreen {
                     return Promise.all(dirPromises).then((fileSets) => { resolve(fileSets); });
                 });
             });
-        } else {
-            return Promise.resolve(node);
-        }
+        } else { return Promise.resolve(node); }
     };
 
     onDrop = (e) => {
@@ -149,9 +120,7 @@ export class SelectWorldScreen extends BaseScreen {
             let entry = e.dataTransfer.items[i].webkitGetAsEntry();
             promises.push(this.walkEntriesAsync(entry).then(this.getFiles));
         }
-        Promise.all(promises).then((result) => {
-            this.handleData(result.flat(10));
-        });
+        Promise.all(promises).then((result) => { this.handleData(result.flat(10)); });
     };
 
     onDragOver = (e) => { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "none"; };
@@ -196,9 +165,8 @@ export class SelectWorldScreen extends BaseScreen {
         let listener = () => ignoreError = true;
         window.addEventListener("beforeunload", listener);
         api.connect((errorCode) => {
-            if (api.isConnected()) {
-                callback();
-            } else if (!ignoreError) {
+            if (api.isConnected()) { callback(); } 
+            else if (!ignoreError) {
                 this.app.showError("Failed to connect", "Backend error: " + errorCode, null, undefined, false, true);
                 window.removeEventListener("beforeunload", listener);
             }
