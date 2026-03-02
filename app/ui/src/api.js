@@ -6,7 +6,7 @@ connect: function (connectHandler) {
         
         // 1. Point to your Render Backend (Use 'wss://' for secure websockets)
         // Example: 'wss://your-app-name.onrender.com'
-        let backendUrl = 'wss://chunker-backend.onrender.com';
+        let backendUrl = 'wss://chunker-2.onrender.com/';
 
         // 2. Create a standard Web Browser connection
         let socket = new WebSocket(backendUrl);
