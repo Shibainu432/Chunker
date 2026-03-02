@@ -173,7 +173,7 @@ export class SelectWorldScreen extends BaseScreen {
         });
     };
 
-    componentDidMount(); {
+    componentDidMount() {
         super.componentDidMount();
         document.addEventListener("dragover", this.onDragOver);
         window.addEventListener("dragenter", this.onDragEnter);
