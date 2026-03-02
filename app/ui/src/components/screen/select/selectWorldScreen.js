@@ -68,15 +68,14 @@ export class SelectWorldScreen extends BaseScreen {
     };
 
 handleData = (files) => {
-    let self = this;
+        let self = this;
 
-    // SAFETY CHECK: Ensure files exist and has at least one item
-    if (!files || files.length === 0) {
-        console.error("handleData called with no files");
-        return;
-    }
+        if (!files || files.length === 0) {
+            console.error("handleData called with no files");
+            return;
+        }
 
-if (files.length > 1) {
+        if (files.length > 1) {
             this.setState({
                 selected: files[0].path.split('/')[1] || "Folder",
                 processing: true,
@@ -87,8 +86,6 @@ if (files.length > 1) {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    
-                    // FIXED LINE 84 (Folder logic)
                     let fullPath = (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile)
                         ? window.chunker.getPathForFile(file.file)
                         : file.path;
@@ -111,7 +108,6 @@ if (files.length > 1) {
             const firstFile = files[0];
             const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
 
-            // FIXED LINE (Single file logic)
             let fullPath;
             if (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile) {
                 fullPath = window.chunker.getPathForFile(firstFile.file);
@@ -144,13 +140,11 @@ if (files.length > 1) {
     readEntriesAsync = (rootEntry) => {
         let reader = rootEntry.createReader();
         let entriesArr = [];
-
         return new Promise((resolve, reject) => {
             reader.readEntries((entries) => {
                 entries.forEach((entry) => {
                     entriesArr.push(entry);
                 });
-
                 resolve(entriesArr);
             }, reject);
         });
@@ -162,7 +156,6 @@ if (files.length > 1) {
             return new Promise((resolve, reject) => {
                 self.readEntriesAsync(node).then((entries) => {
                     let dirPromises = entries.map((dir) => self.walkEntriesAsync(dir));
-
                     return Promise.all(dirPromises).then((fileSets) => {
                         resolve(fileSets);
                     });
@@ -176,16 +169,13 @@ if (files.length > 1) {
     onDrop = (e) => {
         e.preventDefault();
         this.setState({dragging: false, draggingOverBox: false});
-
         if (e.dataTransfer === undefined || e.dataTransfer.items.length === 0) return;
-
         let promises = [];
         for (let i = 0; i < e.dataTransfer.items.length; i++) {
             let item = e.dataTransfer.items[i];
             let entry = item.webkitGetAsEntry();
             promises.push(this.walkEntriesAsync(entry).then(this.getFiles));
         }
-
         Promise.all(promises).then((result) => {
             let list = result.flat(10);
             this.handleData(list);
@@ -230,7 +220,6 @@ if (files.length > 1) {
             detecting: true,
             progress: 0,
         });
-
         let self = this;
         let name = this.state.filePath || "";
         if (!this.state.filePathDirectory && !name.endsWith(".zip") && !name.endsWith(".mcworld")) {
@@ -238,7 +227,6 @@ if (files.length > 1) {
             this.setState({detecting: false});
             return;
         }
-
         this.makeConnection(() => {
             api.send({
                 type: "flow",
@@ -276,7 +264,6 @@ if (files.length > 1) {
         let ignoreError = false;
         let listener = () => ignoreError = true;
         window.addEventListener("beforeunload", listener);
-
         api.connect(function (errorCode) {
             if (api.isConnected()) {
                 callback();
