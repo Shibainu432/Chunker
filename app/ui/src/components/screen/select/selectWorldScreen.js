@@ -33,16 +33,15 @@ export class SelectWorldScreen extends BaseScreen {
     constructor(props) {
         super(props);
 
-        let self = this;
         // Setup fileInput
         this.fileInput = document.createElement("input");
         this.fileInput.type = "file";
         this.fileInput.accept = ".zip,.mcworld";
         this.fileInput.value = null;
         this.fileInput.onclick = () => {
-            self.fileInput.value = null;
+            this.fileInput.value = null;
         };
-        this.fileInput.onchange = () => this.handleData(this.wrapFiles(self.fileInput.files));
+        this.fileInput.onchange = () => this.handleData(this.wrapFiles(this.fileInput.files));
 
         // Setup folderInput
         this.folderInput = document.createElement("input");
@@ -52,9 +51,9 @@ export class SelectWorldScreen extends BaseScreen {
         this.folderInput.multiple = true;
         this.folderInput.value = null;
         this.folderInput.onclick = () => {
-            self.folderInput.value = null;
+            this.folderInput.value = null;
         };
-        this.folderInput.onchange = () => this.handleData(this.wrapFiles(self.folderInput.files));
+        this.folderInput.onchange = () => this.handleData(this.wrapFiles(this.folderInput.files));
 
         // Pick random joke
         this.joke = jokes[Math.floor(Math.random() * jokes.length)];
@@ -67,9 +66,7 @@ export class SelectWorldScreen extends BaseScreen {
         }));
     };
 
-handleData = (files) => {
-        let self = this;
-
+    handleData = (files) => {
         if (!files || files.length === 0) {
             console.error("handleData called with no files");
             return;
@@ -86,8 +83,10 @@ handleData = (files) => {
             for (let i = 0; i < files.length; i++) {
                 let file = files[i];
                 if (file.path.endsWith("/level.dat")) {
-                    let fullPath = (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile)
-                        ? window.chunker.getPathForFile(file.file)
+                    // Safe guard for Desktop vs Web
+                    const chunkerApi = window.chunker;
+                    let fullPath = (chunkerApi && chunkerApi.getPathForFile)
+                        ? chunkerApi.getPathForFile(file.file)
                         : file.path;
 
                     if (fullPath && fullPath.indexOf("level.dat") !== -1) {
@@ -108,12 +107,11 @@ handleData = (files) => {
             const firstFile = files[0];
             const displayPath = firstFile?.path?.split('/')[1] || firstFile?.file?.name || "Unknown World";
 
-            let fullPath;
-            if (typeof window.chunker !== 'undefined' && window.chunker.getPathForFile) {
-                fullPath = window.chunker.getPathForFile(firstFile.file);
-            } else {
-                fullPath = firstFile.file.name;
-            }
+            // Safe guard for Desktop vs Web
+            const chunkerApi = window.chunker;
+            let fullPath = (chunkerApi && chunkerApi.getPathForFile)
+                ? chunkerApi.getPathForFile(firstFile.file)
+                : (firstFile.file.name || firstFile.path);
 
             this.setState({
                 selected: displayPath,
@@ -124,9 +122,8 @@ handleData = (files) => {
     };
 
     getFiles = (entriesList) => {
-        let self = this;
         if (entriesList instanceof Array) {
-            return Promise.all(entriesList.map(self.getFiles));
+            return Promise.all(entriesList.map(this.getFiles));
         } else {
             return new Promise((resolve, reject) => {
                 entriesList.file((file) => resolve({
@@ -151,11 +148,10 @@ handleData = (files) => {
     };
 
     walkEntriesAsync = (node) => {
-        let self = this;
         if (node.isDirectory) {
             return new Promise((resolve, reject) => {
-                self.readEntriesAsync(node).then((entries) => {
-                    let dirPromises = entries.map((dir) => self.walkEntriesAsync(dir));
+                this.readEntriesAsync(node).then((entries) => {
+                    let dirPromises = entries.map((dir) => this.walkEntriesAsync(dir));
                     return Promise.all(dirPromises).then((fileSets) => {
                         resolve(fileSets);
                     });
@@ -220,10 +216,9 @@ handleData = (files) => {
             detecting: true,
             progress: 0,
         });
-        let self = this;
         let name = this.state.filePath || "";
         if (!this.state.filePathDirectory && !name.endsWith(".zip") && !name.endsWith(".mcworld")) {
-            self.app.showError("Failed to load world", "Only .zip and .mcworld files can be used.", undefined, undefined, false);
+            this.app.showError("Failed to load world", "Only .zip and .mcworld files can be used.", undefined, undefined, false);
             this.setState({detecting: false});
             return;
         }
@@ -231,25 +226,25 @@ handleData = (files) => {
             api.send({
                 type: "flow",
                 method: "select_world",
-                path: self.state.filePath,
+                path: this.state.filePath,
             }, (message) => {
                 if (message.type === "response") {
-                    self.app.updateSession(message.output);
-                    self.setState({ detecting: false });
-                    self.app.generateSettings();
-                    self.nextScreen();
+                    this.app.updateSession(message.output);
+                    this.setState({ detecting: false });
+                    this.app.generateSettings();
+                    this.nextScreen();
                 } else if (message.type === "progress" || message.type === "progress_state") {
-                    self.setState({
+                    this.setState({
                         progress: message.percentage * 100,
                         animated: message.animated || false
                     });
                 } else {
                     if (message?.error) {
-                        self.app.showError("Failed to load world", message.error, message.errorId, message.stackTrace, false);
+                        this.app.showError("Failed to load world", message.error, message.errorId, message.stackTrace, false);
                     } else {
-                        self.app.showError("Failed to load world", "Something went wrong communicating with the backend process.", undefined, undefined, false, true);
+                        this.app.showError("Failed to load world", "Something went wrong communicating with the backend process.", undefined, undefined, false, true);
                     }
-                    self.setState({detecting: false});
+                    this.setState({detecting: false});
                 }
             });
         });
@@ -260,11 +255,10 @@ handleData = (files) => {
     };
 
     makeConnection = (callback) => {
-        let self = this;
         let ignoreError = false;
         let listener = () => ignoreError = true;
         window.addEventListener("beforeunload", listener);
-        api.connect(function (errorCode) {
+        api.connect((errorCode) => {
             if (api.isConnected()) {
                 callback();
             } else if (!ignoreError) {
@@ -276,7 +270,7 @@ handleData = (files) => {
                     12: "Your system ran out of memory while converting."
                 };
                 let msg = errorMessages[errorCode] || "Something went wrong communicating with the backend process.";
-                self.app.showError("Failed to connect to backend", msg, null, undefined, false, true);
+                this.app.showError("Failed to connect to backend", msg, null, undefined, false, true);
                 window.removeEventListener("beforeunload", listener)
             }
         });
