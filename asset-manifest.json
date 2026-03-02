@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "./static/css/main.341aa58b.css",
-    "main.js": "./static/js/main.883b1f6f.js",
+    "main.js": "./static/js/main.c0455232.js",
     "static/media/noto-sans-v9-latin-italic.svg": "./static/media/noto-sans-v9-latin-italic.975e8612e57ed464c5a4.svg",
     "static/media/noto-sans-v9-latin-regular.svg": "./static/media/noto-sans-v9-latin-regular.ab6e42380f2a05e00234.svg",
     "static/media/noto-sans-v9-latin-700italic.svg": "./static/media/noto-sans-v9-latin-700italic.e0f0696def0ed607d7af.svg",
@@ -32,10 +32,10 @@
     "static/media/minecraft_five_bold-webfont.woff2": "./static/media/minecraft_five_bold-webfont.fd7f607c98c07acb670d.woff2",
     "index.html": "./index.html",
     "main.341aa58b.css.map": "./static/css/main.341aa58b.css.map",
-    "main.883b1f6f.js.map": "./static/js/main.883b1f6f.js.map"
+    "main.c0455232.js.map": "./static/js/main.c0455232.js.map"
   },
   "entrypoints": [
     "static/css/main.341aa58b.css",
-    "static/js/main.883b1f6f.js"
+    "static/js/main.c0455232.js"
   ]
 }
