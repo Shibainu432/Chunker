@@ -16,9 +16,11 @@ let api = {
         };
 
         socket.onclose = function (e) {
-            console.log("Closed. Code:", e.code);
-            self.connection = undefined;
-            connectHandler(e.code);
+            console.log("WebSocket Closed. Code:", e.code);
+            api.connection = undefined;
+            if (connectHandler) {
+                connectHandler(e.code);
+            }
         };
 
         socket.onmessage = function (e) {
