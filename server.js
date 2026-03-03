@@ -29,8 +29,10 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
   const outputPath = path.join(__dirname, 'uploads', `converted-${req.file.originalname}`);
 
   // This is where the magic happens - calling the Chunker Jar
-  // Update this command based on what conversion you want (e.g., to Bedrock)
-  const command = `java -jar ./chunker.jar --input "${inputPath}" --output "${outputPath}"`;
+  // IMPORTANT: Use the correct parameter names that Chunker CLI expects
+  // --inputDirectory, --outputDirectory, --outputFormat are REQUIRED
+  // Change 'BEDROCK_1_20_80' to your desired output format
+  const command = `java -jar ./chunker.jar --inputDirectory "${inputPath}" --outputDirectory "${outputPath}" --outputFormat BEDROCK_1_20_80`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
