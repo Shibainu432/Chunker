@@ -59,28 +59,12 @@ export class SelectWorldScreen extends BaseScreen {
     };
 
     handleData = (files) => {
-        if (!files || files.length === 0) return;
-
-        if (files.length > 1) {
-            this.setState({ selected: files[0].path.split('/')[1] || "Folder", processing: true, processingPercentage: 0 });
-            let level = null;
-            for (let i = 0; i < files.length; i++) {
-                let fileObj = files[i];
-                if (fileObj.path.endsWith("/level.dat")) {
-                    level = fileObj.path.substring(0, fileObj.path.lastIndexOf("level.dat"));
-                    break;
-                }
-            }
-            if (level !== null) { 
-                this.setState({filePath: level, filePathDirectory: true, processing: false}); 
-            } else {
-                this.app.showError("Invalid World", "No level.dat found.", null, undefined, true);
-                this.setState({selected: false, detecting: false, processing: false});
-            }
-        } else if (files.length === 1) {
+        if (files && files.length === 1) {
             const firstFile = files[0];
-            let nameOnly = firstFile.file.name || firstFile.path;
-            this.setState({ selected: nameOnly, filePath: nameOnly, filePathDirectory: false });
+            this.setState({ 
+                selected: firstFile.file.name, 
+                actualFile: firstFile.file // Save the actual file object
+            });
         }
     };
 
