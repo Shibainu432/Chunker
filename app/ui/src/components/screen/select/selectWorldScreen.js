@@ -131,27 +131,28 @@ export class SelectWorldScreen extends BaseScreen {
     showFolderBrowser = () => this.folderInput.click();
 
     startSession = () => {
-        this.setState({ detecting: true, progress: 0 });
-        let name = this.state.filePath || "";
-        if (!this.state.filePathDirectory && !name.endsWith(".zip") && !name.endsWith(".mcworld")) {
-            this.app.showError("Failed to load world", "Only .zip and .mcworld files can be used.", undefined, undefined, false);
+           this.setState({ detecting: true, progress: 0 });
+        
+        // Find the file to upload
+        // In the UI, 'this.state.filePath' usually stores the name, 
+        // but we need the actual file object from the input.
+        const fileToUpload = this.fileInput.files[0];
+
+        if (!fileToUpload) {
+            this.app.showError("No file selected", "Please select a .zip or .mcworld file first.");
             this.setState({detecting: false});
             return;
         }
-        this.makeConnection(() => {
-            api.send({ type: "flow", method: "select_world", path: this.state.filePath }, (message) => {
-                if (message.type === "response") {
-                    this.app.updateSession(message.output);
-                    this.setState({ detecting: false });
-                    this.app.generateSettings();
-                    this.nextScreen();
-                } else if (message.type === "progress" || message.type === "progress_state") {
-                    this.setState({ progress: message.percentage * 100, animated: message.animated || false });
-                } else {
-                    this.app.showError("Failed to load world", message.error || "Error", message.errorId, message.stackTrace, false);
-                    this.setState({detecting: false});
-                }
-            });
+
+        // Call our new HTTP-based api.send
+        api.send(fileToUpload, (message) => {
+            if (message.type === "response") {
+                this.setState({ detecting: false });
+                alert("Conversion started! Your file should download shortly.");
+            } else if (message.type === "error") {
+                this.app.showError("Failed to load world", message.error, null, undefined, false);
+                this.setState({detecting: false});
+            }
         });
     };
 
