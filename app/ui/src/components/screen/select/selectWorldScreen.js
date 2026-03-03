@@ -114,19 +114,26 @@ export class SelectWorldScreen extends BaseScreen {
     showFileBrowser = () => this.fileInput.click();
     showFolderBrowser = () => this.folderInput.click();
 
-    startSession = () => {
+startSession = () => {
+        // 1. Check if we actually have the file in state
         if (!this.state.actualFile) {
-            alert("Please select a file first");
+            this.app.showError("No file selected", "Please select a .zip or .mcworld file first.");
             return;
         }
-        this.setState({ detecting: true });
-    
-        api.send(this.state.actualFile, (msg) => {
+
+        this.setState({ detecting: true, progress: 0 });
+
+        // 2. Call the API only ONCE
+        api.send(this.state.actualFile, (message) => {
             this.setState({ detecting: false });
-            if (msg.type === "error") {
-                this.app.showError("Error", msg.error);
+            
+            if (message.type === "response") {
+                alert("Conversion started! Your file should download shortly.");
+            } else if (message.type === "error") {
+                this.app.showError("Failed to convert world", message.error, null, undefined, false);
             }
         });
+    };
 
         // Call our new HTTP-based api.send
         api.send(fileToUpload, (message) => {
