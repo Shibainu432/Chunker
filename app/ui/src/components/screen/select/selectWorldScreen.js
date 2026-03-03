@@ -3,6 +3,7 @@ import {BaseScreen} from "../baseScreen";
 import {ModeScreen} from "../mode/modeScreen";
 import api from "../../../api";
 import {Round2DP} from "../../progress";
+import JSZip from "jszip";
 
 let jokes = [
     "How does Steve stay in shape? He runs around the block.",
@@ -67,33 +68,35 @@ export class SelectWorldScreen extends BaseScreen {
         }));
     };
 
-    handleData = (files) => {
-        let self = this;
+handleData = async (files) => {
+        if (!files || files.length === 0) return;
 
-        if (files.length > 1) {
-            this.setState({
-                selected: files[0].path.split('/')[1],
-                processing: true,
-                processingPercentage: 0
+        if (files.length === 1) {
+            // Single file (.zip or .mcworld) - Works normally
+            this.setState({ 
+                selected: files[0].file.name, 
+                actualFile: files[0].file 
+            });
+        } else {
+            // It's a folder! We need to zip it before sending
+            this.setState({ detecting: true, animated: true }); // Show "Preparing" UI
+            
+            const zip = new JSZip();
+            files.forEach(f => {
+                // Remove leading slash if present
+                const cleanPath = f.path.startsWith('/') ? f.path.substring(1) : f.path;
+                zip.file(cleanPath, f.file);
             });
 
-            let level = null;
-            for (let i = 0; i < files.length; i++) {
-                let file = files[i];
-                if (file.path.endsWith("/level.dat")) {
-                    let fullPath = window.chunker.getPathForFile(file.file);
-                    level = fullPath.substring(0, fullPath.lastIndexOf("level.dat"));
-                }
-            }
-            if (level) {
-                self.setState({filePath: level, filePathDirectory: true, processing: false});
-            } else {
-                this.app.showError("Invalid World", "The folder you selected did not contain a level.dat, please ensure you're using a Minecraft world folder.", null, undefined, true);
-                this.setState({selected: false, detecting: false, processing: false});
-            }
-        } else {
-            let fullPath = window.chunker.getPathForFile(files[0].file);
-            this.setState({selected: files[0].path.split('/')[1], filePath: fullPath, filePathDirectory: false});
+            const content = await zip.generateAsync({type: "blob"});
+            const folderName = files[0].path.split('/')[1] || "folder_upload";
+
+            this.setState({ 
+                selected: `${folderName} (Compressed Folder)`, 
+                actualFile: content,
+                detecting: false,
+                animated: false
+            });
         }
     };
 
@@ -204,61 +207,19 @@ export class SelectWorldScreen extends BaseScreen {
 
     showFolderBrowser = () => this.folderInput.click();
 
-    startSession = () => {
-        // Mark as detecting file
-        this.setState({
-            detecting: true,
-            progress: 0,
-        });
-
-        // Do request
-        let self = this;
-
-        // Check selected type (if it's a file)
-        let name = this.state.filePath;
-        if (!this.state.filePathDirectory && !name.endsWith(".zip") && !name.endsWith(".mcworld")) {
-            self.app.showError("Failed to load world", "Only .zip and .mcworld files can be used.", undefined, undefined, false);
+startSession = () => {
+        if (!this.state.actualFile) {
+            this.app.showError("No file", "Please select a world first.");
             return;
         }
 
-        // Make the connection
-        this.makeConnection(() => {
-            api.send({
-                type: "flow",
-                method: "select_world",
-                path: self.state.filePath,
-            }, (message) => {
-                if (message.type === "response") {
-                    // Update session
-                    self.app.updateSession(message.output);
+        this.setState({ detecting: true });
 
-                    // Goto next screen
-                    self.setState({
-                        detecting: false
-                    });
-                    self.app.generateSettings();
-                    self.nextScreen();
-                } else if (message.type === "progress") {
-                    // Update progress
-                    self.setState({
-                        progress: message.percentage * 100
-                    });
-                } else if (message.type === "progress_state") {
-                    // Update progress state
-                    self.setState({
-                        progress: message.percentage * 100,
-                        animated: message.animated
-                    });
-                } else {
-                    // Attempt to find the actual error
-                    console.info("Could not make request :(", message);
-                    if (message?.error) {
-                        self.app.showError("Failed to load world", message.error, message.errorId, message.stackTrace, false);
-                    } else {
-                        self.app.showError("Failed to load world", "Something went wrong communicating with the backend process.", undefined, undefined, false, true);
-                    }
-                }
-            });
+        api.send(this.state.actualFile, (message) => {
+            this.setState({ detecting: false });
+            if (message.type === "error") {
+                this.app.showError("Error", message.error);
+            }
         });
     };
 
