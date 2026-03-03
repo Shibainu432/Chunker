@@ -1,38 +1,24 @@
 {
-  "name": "chunker-ui",
+  "name": "chunker-app",
   "private": true,
-  "description": "React based interface for the Chunker electron app.",
+  "description": "Parent package of the Chunker Electron app and user interface.",
   "author": "Hive Games Limited <chunker-public@hivemc.com>",
   "license": "MIT",
-  "homepage": "./",
+  "homepage": "https://github.com/HiveGamesOSS/Chunker",
   "scripts": {
-    "prestart": "node scripts/process-block-data.js",
-    "start": "react-scripts start",
-    "prebuild": "node scripts/process-block-data.js",
-    "build": "react-scripts build",
-    "eslint": "eslint src/**/*.js",
-    "test": "react-scripts test"
+    "start": "concurrently \"cross-env BROWSER=none npm start --prefix ui\" \"npx wait-on http://127.0.0.1:3000 && cross-env DEV_UI_URL=http://localhost:3000 DEV_CLI_EXECUTABLE=../../cli/build/libs/ npm start --prefix electron\"",
+    "build": "npm run build --prefix ui && npm run publish --prefix electron"
   },
-  "dependencies": {
-    "@fortawesome/free-solid-svg-icons": "^7.1.0",
-    "@fortawesome/react-fontawesome": "^3.1.0",
-    "base64-arraybuffer": "^1.0.2",
-    "chroma-js": "^3.1.2",
-    "file-saver": "^2.0.5",
-    "jszip": "^3.10.1",
-    "leaflet": "^1.9.4",
-    "leaflet-draw": "^1.0.4",
-    "leaflet-fullscreen": "^1.0.2",
-    "leaflet-mouse-position": "^1.2.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.4",
-    "react-scripts": "^5.0.1",
-    "react-select": "^5.10.2",
-    "seedrandom": "^3.0.5"
+  "workspaces": {
+    "packages": [
+      "electron",
+      "ui"
+    ]
   },
-  "eslintConfig": {
-    "extends": "react-app"
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "wait-on": "^9.0.1"
   },
   "browserslist": {
     "production": [
@@ -46,8 +32,27 @@
       "last 1 safari version"
     ]
   },
-  "devDependencies": {
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "gh-pages": "^6.3.0"
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/react-fontawesome": "^3.2.0",
+    "axios": "^1.13.6",
+    "base64-arraybuffer": "^1.0.2",
+    "chroma-js": "^3.2.0",
+    "clsx": "^2.1.1",
+    "file-saver": "^2.0.5",
+    "leaflet": "^1.9.4",
+    "leaflet-draw": "^1.0.4",
+    "leaflet-fullscreen": "^1.0.2",
+    "leaflet-geometryutil": "^0.10.3",
+    "leaflet-mouse-position": "^1.2.0",
+    "lucide-react": "^0.576.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-leaflet": "^5.0.0",
+    "react-router-dom": "^7.13.1",
+    "react-select": "^5.10.2",
+    "seedrandom": "^3.0.5",
+    "tailwind-merge": "^3.5.0"
   }
 }
