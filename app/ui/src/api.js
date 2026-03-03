@@ -1,47 +1,61 @@
-let api = {
-    connection: undefined,
-    replyHandlers: {},
-    connect: function (connectHandler) {
-        // Use 'api' instead of 'this' or 'self' inside the listeners
-        let backendUrl = 'wss://chunker-2.onrender.com/'; 
-        
-        console.log("Connecting to Render Backend...");
-        let socket = new WebSocket(backendUrl);
+const api = {
+    // Standard HTTPS URL for your Render service
+    baseUrl: 'https://chunker-2.onrender.com',
 
-        socket.onopen = function () {
-            console.log("Connected successfully!");
-            api.connection = socket;
-            if (connectHandler) connectHandler();
-        };
+    // This replaces the old 'send' logic to work with your server.js
+    send: async function (fileData, replyHandler) {
+        // fileData usually comes from SelectWorldScreen as an object
+        // We need the actual File object to upload it
+        const file = fileData.file || fileData; 
 
-        socket.onclose = function (e) {
-            console.log("WebSocket Closed. Code:", e.code);
-            api.connection = undefined;
-            // This fix prevents the selectWorldScreen.js:165 crash
-            if (connectHandler) connectHandler(e.code);
-        };
+        const formData = new FormData();
+        formData.append('file', file);
 
-        socket.onmessage = function (e) {
-            let msg = JSON.parse(e.data);
-            if (api.replyHandlers[msg.requestId]) {
-                api.replyHandlers[msg.requestId](msg);
-                if (!msg.continue) delete api.replyHandlers[msg.requestId];
+        console.log("Uploading world to Chunker Backend...");
+
+        try {
+            const response = await fetch(`${this.baseUrl}/api/convert`, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || "Server error during conversion");
             }
-        };
 
-        socket.onerror = function (err) {
-            console.error("Connection failed. Check Render Logs for CORS or Port errors.");
-        };
-    },
-    send: function (obj, replyHandler) {
-        obj.requestId = Math.random().toString(36).substring(2);
-        if (api.isConnected()) {
-            api.replyHandlers[obj.requestId] = replyHandler;
-            api.connection.send(JSON.stringify(obj));
+            // Once the server finishes, it sends a file back
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            // Create a hidden link to trigger the download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `converted-${file.name || 'world.zip'}`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            console.log("Conversion complete!");
+            
+            // Fake a success response so the UI knows to stop loading
+            if (replyHandler) replyHandler({ type: "response", output: { success: true } });
+
+        } catch (err) {
+            console.error("Upload failed:", err);
+            alert("Error: " + err.message);
+            if (replyHandler) replyHandler({ type: "error", error: err.message });
         }
     },
+
+    // Dummy functions to keep SelectWorldScreen from crashing
+    connect: function (callback) {
+        console.log("HTTP Mode: Connection ready.");
+        if (callback) callback();
+    },
+
     isConnected: function () {
-        return api.connection !== undefined && api.connection.readyState === WebSocket.OPEN;
+        return true; 
     }
 };
 
