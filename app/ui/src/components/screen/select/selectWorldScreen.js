@@ -115,18 +115,18 @@ export class SelectWorldScreen extends BaseScreen {
     showFolderBrowser = () => this.folderInput.click();
 
     startSession = () => {
-           this.setState({ detecting: true, progress: 0 });
-        
-        // Find the file to upload
-        // In the UI, 'this.state.filePath' usually stores the name, 
-        // but we need the actual file object from the input.
-        const fileToUpload = this.fileInput.files[0];
-
-        if (!fileToUpload) {
-            this.app.showError("No file selected", "Please select a .zip or .mcworld file first.");
-            this.setState({detecting: false});
+        if (!this.state.actualFile) {
+            alert("Please select a file first");
             return;
         }
+        this.setState({ detecting: true });
+    
+        api.send(this.state.actualFile, (msg) => {
+            this.setState({ detecting: false });
+            if (msg.type === "error") {
+                this.app.showError("Error", msg.error);
+            }
+        });
 
         // Call our new HTTP-based api.send
         api.send(fileToUpload, (message) => {
