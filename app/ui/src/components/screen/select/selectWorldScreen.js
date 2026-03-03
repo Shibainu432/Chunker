@@ -24,7 +24,8 @@ export class SelectWorldScreen extends BaseScreen {
         processing: false,
         processingPercentage: 0,
         dragging: false,
-        draggingOverBox: false
+        draggingOverBox: false,
+        actualFile: undefined
     };
     fileInput = undefined;
     folderInput = undefined;
@@ -63,7 +64,7 @@ export class SelectWorldScreen extends BaseScreen {
             const firstFile = files[0];
             this.setState({ 
                 selected: firstFile.file.name, 
-                actualFile: firstFile.file // Save the actual file object
+                actualFile: firstFile.file 
             });
         }
     };
@@ -114,8 +115,7 @@ export class SelectWorldScreen extends BaseScreen {
     showFileBrowser = () => this.fileInput.click();
     showFolderBrowser = () => this.folderInput.click();
 
-startSession = () => {
-        // 1. Check if we actually have the file stored in state
+    startSession = () => {
         if (!this.state.actualFile) {
             this.app.showError("No file selected", "Please select a .zip or .mcworld file first.");
             return;
@@ -123,43 +123,20 @@ startSession = () => {
 
         this.setState({ detecting: true, progress: 0 });
 
-        // 2. Call the API (Only once!)
         api.send(this.state.actualFile, (message) => {
             this.setState({ detecting: false });
-            
             if (message.type === "response") {
-                alert("Conversion complete! Your file should be downloading.");
-            } else if (message.type === "error") {
-                this.app.showError("Conversion Failed", message.error, null, undefined, false);
-            }
-        });
-    };
-
-        // Call our new HTTP-based api.send
-        api.send(fileToUpload, (message) => {
-            if (message.type === "response") {
-                this.setState({ detecting: false });
                 alert("Conversion started! Your file should download shortly.");
             } else if (message.type === "error") {
-                this.app.showError("Failed to load world", message.error, null, undefined, false);
-                this.setState({detecting: false});
+                this.app.showError("Failed to convert world", message.error, null, undefined, false);
             }
         });
     };
 
-    cancel = () => { this.setState({selected: false, detecting: false, processing: false}); };
+    cancel = () => { this.setState({selected: undefined, actualFile: undefined, detecting: false, processing: false}); };
 
     makeConnection = (callback) => {
-        let ignoreError = false;
-        let listener = () => ignoreError = true;
-        window.addEventListener("beforeunload", listener);
-        api.connect((errorCode) => {
-            if (api.isConnected()) { callback(); } 
-            else if (!ignoreError) {
-                this.app.showError("Failed to connect", "Backend error: " + errorCode, null, undefined, false, true);
-                window.removeEventListener("beforeunload", listener);
-            }
-        });
+        if (callback) callback();
     };
 
     componentDidMount() {
@@ -210,7 +187,7 @@ startSession = () => {
                         <div className="progress_bar">
                             <div className="progress_fill" style={{width: this.state.processingPercentage + "%"}}/>
                         </div>
-                        <p>Please wait while we prepare your world to be prepared. This won't take too long...</p>
+                        <p>Please wait while we prepare your world.</p>
                     </div>
                 }
                 {this.state.selected && !this.state.processing && !this.state.detecting &&
@@ -222,7 +199,6 @@ startSession = () => {
                 }
                 {this.state.selected && !this.state.processing && this.state.detecting &&
                     <div className="main_content main_content_progress">
-
                         {!this.state.animated &&
                             <h3>Preparing World: <span>{Round2DP(this.state.progress)}%</span></h3>}
                         {this.state.animated && <h3>Detecting world version</h3>}
@@ -230,9 +206,6 @@ startSession = () => {
                             {!this.state.animated &&
                                 <div className="progress_fill" style={{width: this.state.progress + "%"}}/>}
                         </div>
-                        {!this.state.animated && <p>Please wait while we prepare your world.</p>}
-                        {this.state.animated &&
-                            <p>Please wait while we work out what version of Minecraft this world is.</p>}
                         <p>{this.joke}</p>
                     </div>
                 }
