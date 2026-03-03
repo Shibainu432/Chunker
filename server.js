@@ -30,7 +30,7 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
 
   // This is where the magic happens - calling the Chunker Jar
   // Update this command based on what conversion you want (e.g., to Bedrock)
-  const command = `java -jar /app/chunker.jar --input "${inputPath}" --output "${outputPath}"`;
+  const command = `java -jar ./chunker.jar --input "${inputPath}" --output "${outputPath}"`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
