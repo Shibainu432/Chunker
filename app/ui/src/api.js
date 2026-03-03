@@ -10,13 +10,14 @@ const api = {
         try {
             console.log("Starting HTTPS Upload to Render...");
             
-            const response = await fetch(`${this.baseUrl}/api/convert`, {
-                method: 'POST',
-                body: formData,
-                // These settings help when uploading from restricted networks
-                mode: 'cors',
-                credentials: 'omit', 
-            });
+    const response = await fetch(`${this.baseUrl}/api/convert`, {
+        method: 'POST',
+        body: formData,
+        // Forces the browser to handle the request as a basic 'no-frills' upload
+        mode: 'cors',
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
+    });
 
             if (!response.ok) {
                 const errorText = await response.text();
