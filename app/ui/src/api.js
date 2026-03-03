@@ -4,7 +4,7 @@ let api = {
     connect: function (connectHandler) {
         let self = this;
         // Use the root path first to test if Render prefers it
-        let backendUrl = 'wss://chunker-2.onrender.com/'; 
+        let backendUrl = 'wss://chunker-2.onrender.com'; 
         
         console.log("Connecting to Render Backend...");
         let socket = new WebSocket(backendUrl);
