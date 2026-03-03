@@ -1,22 +1,24 @@
 let api = {
     connection: undefined,
     replyHandlers: {},
-connect: function (connectHandler) {
+    connect: function (connectHandler) {
         let self = this;
         
-        // 1. Point to your Render Backend (Use 'wss://' for secure websockets)
-        // Example: 'wss://your-app-name.onrender.com'
+        // 1. Point to your Render Backend with the /ws path
         let backendUrl = 'wss://chunker-2.onrender.com/ws';
+        console.log("Attempting to connect to: " + backendUrl);
 
         // 2. Create a standard Web Browser connection
         let socket = new WebSocket(backendUrl);
 
         socket.onopen = function () {
-            self.connection = socket; // Save the connection
+            console.log("WebSocket connected successfully!");
+            self.connection = socket; 
             connectHandler();
         };
 
         socket.onclose = function (e) {
+            console.log("WebSocket closed. Code:", e.code);
             self.connection = undefined;
             connectHandler(e.code);
         };
@@ -35,11 +37,13 @@ connect: function (connectHandler) {
         };
 
         socket.onerror = function (error) {
-            console.error("WebSocket Error: ", error);
+            console.error("WebSocket Error details: ", error);
         };
     },
     send: function (obj, replyHandler) {
-        obj.requestId = crypto.randomUUID();// Generate random id
+        // Use a simpler ID generator if crypto.randomUUID fails in some browsers
+        obj.requestId = Math.random().toString(36).substring(2, 15);
+        
         if (this.connection !== undefined) {
             this.replyHandlers[obj.requestId] = replyHandler;
             this.connection.send(JSON.stringify(obj));
