@@ -2,32 +2,30 @@ let api = {
     connection: undefined,
     replyHandlers: {},
     connect: function (connectHandler) {
-        let self = this;
-        // Use the root path first to test if Render prefers it
-        let backendUrl = 'wss://chunker-2.onrender.com'; 
+        // Use 'api' instead of 'this' or 'self' inside the listeners
+        let backendUrl = 'wss://chunker-2.onrender.com/'; 
         
         console.log("Connecting to Render Backend...");
         let socket = new WebSocket(backendUrl);
 
         socket.onopen = function () {
-            console.log("Connected!");
-            self.connection = socket;
-            connectHandler();
+            console.log("Connected successfully!");
+            api.connection = socket;
+            if (connectHandler) connectHandler();
         };
 
         socket.onclose = function (e) {
             console.log("WebSocket Closed. Code:", e.code);
             api.connection = undefined;
-            if (connectHandler) {
-                connectHandler(e.code);
-            }
+            // This fix prevents the selectWorldScreen.js:165 crash
+            if (connectHandler) connectHandler(e.code);
         };
 
         socket.onmessage = function (e) {
             let msg = JSON.parse(e.data);
-            if (self.replyHandlers[msg.requestId]) {
-                self.replyHandlers[msg.requestId](msg);
-                if (!msg.continue) delete self.replyHandlers[msg.requestId];
+            if (api.replyHandlers[msg.requestId]) {
+                api.replyHandlers[msg.requestId](msg);
+                if (!msg.continue) delete api.replyHandlers[msg.requestId];
             }
         };
 
@@ -37,10 +35,14 @@ let api = {
     },
     send: function (obj, replyHandler) {
         obj.requestId = Math.random().toString(36).substring(2);
-        if (this.connection) {
-            this.replyHandlers[obj.requestId] = replyHandler;
-            this.connection.send(JSON.stringify(obj));
+        if (api.isConnected()) {
+            api.replyHandlers[obj.requestId] = replyHandler;
+            api.connection.send(JSON.stringify(obj));
         }
+    },
+    isConnected: function () {
+        return api.connection !== undefined && api.connection.readyState === WebSocket.OPEN;
     }
 };
+
 export default api;
