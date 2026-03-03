@@ -3,62 +3,42 @@ let api = {
     replyHandlers: {},
     connect: function (connectHandler) {
         let self = this;
+        // Use the root path first to test if Render prefers it
+        let backendUrl = 'wss://chunker-2.onrender.com/'; 
         
-        // 1. Point to your Render Backend with the /ws path
-        let backendUrl = 'wss://chunker-2.onrender.com/ws';
-        console.log("Attempting to connect to: " + backendUrl);
-
-        // 2. Create a standard Web Browser connection
+        console.log("Connecting to Render Backend...");
         let socket = new WebSocket(backendUrl);
 
         socket.onopen = function () {
-            console.log("WebSocket connected successfully!");
-            self.connection = socket; 
+            console.log("Connected!");
+            self.connection = socket;
             connectHandler();
         };
 
         socket.onclose = function (e) {
-            console.log("WebSocket closed. Code:", e.code);
+            console.log("Closed. Code:", e.code);
             self.connection = undefined;
             connectHandler(e.code);
         };
 
         socket.onmessage = function (e) {
             let msg = JSON.parse(e.data);
-            let requestId = msg.requestId;
-            
-            if (self.replyHandlers[requestId]) {
-                let handler = self.replyHandlers[requestId];
-                if (msg.continue === undefined || msg.continue === false) {
-                    delete self.replyHandlers[requestId];
-                }
-                handler(msg);
+            if (self.replyHandlers[msg.requestId]) {
+                self.replyHandlers[msg.requestId](msg);
+                if (!msg.continue) delete self.replyHandlers[msg.requestId];
             }
         };
 
-        socket.onerror = function (error) {
-            console.error("WebSocket Error details: ", error);
+        socket.onerror = function (err) {
+            console.error("Connection failed. Check Render Logs for CORS or Port errors.");
         };
     },
     send: function (obj, replyHandler) {
-        // Use a simpler ID generator if crypto.randomUUID fails in some browsers
-        obj.requestId = Math.random().toString(36).substring(2, 15);
-        
-        if (this.connection !== undefined) {
+        obj.requestId = Math.random().toString(36).substring(2);
+        if (this.connection) {
             this.replyHandlers[obj.requestId] = replyHandler;
             this.connection.send(JSON.stringify(obj));
-        } else {
-            throw Error("Not connected!");
-        }
-    },
-    isConnected: function () {
-        return this.connection !== undefined;
-    },
-    close: function () {
-        if (this.isConnected()) {
-            this.connection.close();
         }
     }
 };
-
 export default api;
