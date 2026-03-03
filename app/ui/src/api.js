@@ -5,7 +5,7 @@ const api = {
         // Create the form data
         const formData = new FormData();
         // Use 'world' as the key to match common Chunker backend expectations
-        formData.append('world', file);
+        formData.append('file', file);
 
         try {
             console.log("Starting HTTPS Upload to Render...");
