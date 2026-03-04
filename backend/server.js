@@ -8,9 +8,9 @@ const buildPath = path.resolve(process.cwd(), 'build');
 
 console.log("Checking for build folder at:", buildPath);
 
-// 1. CORS Configuration
+// 1. Middleware
 app.use(cors({
-  origin: ['https://shibainu432.github.io', 'https://chunker-2.onrender.com', 'http://localhost:3000', 'http://localhost:10000'], 
+  origin: ['', '', 'http://localhost:3000', 'http://localhost:10000'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
@@ -18,21 +18,26 @@ app.use(cors({
 app.use(express.json());
 
 // 2. Serve static files
-// We only need this once. Using buildPath (process.cwd) is safer for Docker.
 app.use(express.static(buildPath));
 
-// ... [Insert your /api/convert routes here] ...
+// 3. YOUR MISSING API ROUTE
+// This tells the server what to do when the frontend clicks the button
+app.post('/api/convert', (req, res) => {
+  console.log("POST request received at /api/convert");
+  // For now, we send a success message to prove the link is working
+  res.json({ message: "Success! The server found the convert route." });
+});
 
-// 3. Catch-all route to serve the frontend
+// 4. Catch-all route to serve the frontend
 app.get('*', (req, res) => {
-    const indexPath = path.join(buildPath, 'index.html');
-    res.sendFile(indexPath, (err) => {
-        if (err) {
-            console.error("ERROR: Could not find index.html at", indexPath);
-            res.status(500).send(`Frontend missing. Server is looking in: ${indexPath}`);
-        }
-    }); // Added missing closing parenthesis for res.sendFile
-}); // Added missing closing brace for app.get
+  const indexPath = path.join(buildPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error("ERROR: Could not find index.html at", indexPath);
+      res.status(500).send(Frontend missing. Server is looking in: ${indexPath});
+    }
+  });
+});
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(Server running on port ${PORT}));
