@@ -1,10 +1,10 @@
 {
+  "homepage": "https://shibainu432.github.io/Chunker",
   "name": "chunker-app",
   "private": true,
   "description": "Parent package of the Chunker Electron app and user interface.",
   "author": "Hive Games Limited <chunker-public@hivemc.com>",
   "license": "MIT",
-  "homepage": "https://shibainu432.github.io/Chunker",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
