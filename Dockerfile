@@ -1,24 +1,22 @@
-# 1. Use Node as the base
-FROM node:18
+FROM node:20
 
-# 2. Set the working directory inside the container
+# 1. Create the working directory
 WORKDIR /app
 
-# 3. Copy backend dependency files and install
-# (Assuming your server.js and package.json are in the /backend folder)
-COPY backend/package*.json ./
-RUN npm install
+# 2. Copy the backend files first to install dependencies
+COPY backend/package*.json ./backend/
+RUN cd backend && npm install
 
-# 4. Copy the backend source code
-COPY backend/ ./
+# 3. Copy the REST of the backend (server.js, etc.)
+COPY backend/ ./backend/
 
-# 5. CRITICAL: Copy the frontend build folder into the container's root
-# We already ran 'npm run build' locally, so we just need to copy it in.
+# 4. Copy the UI build folder into /app/build
+# This is what allows the server to serve the frontend
 COPY backend/build/ ./build/
 
-# 6. Verify files exist (check Render logs for this output)
-RUN ls -la /app/build
-
-# 7. Start the server
+# 5. Set environment variables
+ENV PORT=10000
 EXPOSE 10000
-CMD ["node", "server.js"]
+
+# 6. Start the server
+CMD ["node", "backend/server.js"]
