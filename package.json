@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/Shibainu432/Chunker/issues"
   },
-  "homepage": "https://github.com/Shibainu432/Chunker#readme"
+  "homepage": "https://github.com/Shibainu432/Chunker#readme",
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
 }
