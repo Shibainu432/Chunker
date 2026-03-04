@@ -1,24 +1,12 @@
 {
-  "name": "chunker",
-  "version": "1.0.0",
-  "description": "**Convert Minecraft worlds between Java Edition and Bedrock Edition**",
-  "main": "index.js",
-  "scripts": {
-    "deploy-all": "cd app/ui && npm run build && npm run build deploy && cd ../.. && rm -rf backend/build && cp -r app/ui/build backend/build"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Shibainu432/Chunker.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/Shibainu432/Chunker/issues"
-  },
-  "homepage": "https://github.com/Shibainu432/Chunker#readme",
-  "devDependencies": {
-    "gh-pages": "^6.3.0"
-  }
+"name": "chunker-root",
+"version": "1.0.0",
+"scripts": {
+"start": "node backend/server.js",
+"deploy-all": "cd app/ui && npm run build && npm run deploy && cd ../.. && rm -rf backend/build && cp -r app/ui/build backend/build"
+},
+"dependencies": {
+"express": "^4.18.2",
+"cors": "^2.8.5"
+}
 }
