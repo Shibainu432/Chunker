@@ -1,54 +1,26 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
-const { exec } = require('child_process');
 const path = require('path');
-const fs = require('fs');
-
 const app = express();
-const port = process.env.PORT || 10000;
 
-// 1. Allow GitHub Pages to talk to this server
-app.use(cors());
+// 1. Allow GitHub Pages to talk to this API
+app.use(cors({
+  origin: ['https://your-github-username.github.io', 'http://localhost:3000'], 
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
+
 app.use(express.json());
 
-// 2. Setup file storage (uploads folder)
-const upload = multer({ dest: 'uploads/' });
+// 2. Serve the INTERNAL frontend (Render's copy)
+app.use(express.static(path.join(__dirname, 'build')));
 
-app.get('/', (req, res) => {
-  res.send('Chunker Service is Running!');
+// ... your existing upload/conversion routes here ...
+
+// 3. Make sure the Internal frontend handles routing
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// 3. The actual UPLOAD endpoint the UI is looking for
-app.post('/api/convert', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send('No file uploaded.');
-  }
-
-  const inputPath = req.file.path;
-  const outputPath = path.join(__dirname, 'uploads', `converted-${req.file.originalname}`);
-
-  // This is where the magic happens - calling the Chunker Jar
-  // IMPORTANT: Use the correct parameter names that Chunker CLI expects
-  // --inputDirectory, --outputDirectory, --outputFormat are REQUIRED
-  // Change 'BEDROCK_1_20_80' to your desired output format
-  const command = `java -jar ./chunker.jar --inputDirectory "${inputPath}" --outputDirectory "${outputPath}" --outputFormat BEDROCK_1_20_80`;
-
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error: ${stderr}`);
-      return res.status(500).json({ error: 'Conversion failed', details: stderr });
-    }
-    
-    // Send the converted file back to the user
-    res.download(outputPath, () => {
-      // Clean up files after download
-      fs.unlinkSync(inputPath);
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-    });
-  });
-});
-
-app.listen(port, () => {
-  console.log(`Chunker server running on port ${port}`);
-});
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
