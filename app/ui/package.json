@@ -8,7 +8,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "electron-build": "npm run build --prefix ui && npm run publish --prefix electron",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
