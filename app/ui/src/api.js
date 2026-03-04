@@ -3,7 +3,7 @@ const api = {
     // 1. If you're on your own computer, it uses Localhost.
     // 2. If you're on Render, it uses a relative path (the most stable).
     // 3. If you're on GitHub, it uses your specific Render link.
-    baseUrl: window.location.hostname === 'localhost' 
+    baseUrl: window.location.hostname === 'https://chunker-2.onrender.com/' 
         ? 'http://localhost:10000' 
         : (window.location.hostname.includes('github.io') 
             ? 'https://chunker-2.onrender.com' 
