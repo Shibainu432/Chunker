@@ -1,24 +1,24 @@
-# Use a lightweight version of Java + Node
-FROM eclipse-temurin:17-jre
+# 1. Use Node as the base
+FROM node:18
 
-# Install Node.js (needed to run server.js)
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
-
+# 2. Set the working directory inside the container
 WORKDIR /app
 
-# Copy everything from your backend folder into the container
-COPY . .
-
-# Ensure the JAR is executable
-RUN chmod +x /app/chunker.jar
-
-# We already created the package.json, so we just install the needs
+# 3. Copy backend dependency files and install
+# (Assuming your server.js and package.json are in the /backend folder)
+COPY backend/package*.json ./
 RUN npm install
 
-EXPOSE 10000
+# 4. Copy the backend source code
+COPY backend/ ./
 
-# Start the server
+# 5. CRITICAL: Copy the frontend build folder into the container's root
+# We already ran 'npm run build' locally, so we just need to copy it in.
+COPY backend/build/ ./build/
+
+# 6. Verify files exist (check Render logs for this output)
+RUN ls -la /app/build
+
+# 7. Start the server
+EXPOSE 10000
 CMD ["node", "server.js"]
