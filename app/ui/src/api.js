@@ -1,26 +1,33 @@
 const api = {
-    baseUrl: 'https://chunker-2.onrender.com',
+    // This automatically picks the correct URL:
+    // 1. If you're on your own computer, it uses Localhost.
+    // 2. If you're on Render, it uses a relative path (the most stable).
+    // 3. If you're on GitHub, it uses your specific Render link.
+    baseUrl: window.location.hostname === 'localhost' 
+        ? 'http://localhost:10000' 
+        : (window.location.hostname.includes('github.io') 
+            ? 'https://chunker-2.onrender.com' 
+            : ''), 
 
     send: async function (file, replyHandler) {
         const formData = new FormData();
         formData.append('file', file); 
 
-        // --- NEW: TIMEOUT LOGIC ---
-        // This stops the app from hanging forever if the school blocks the upload
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
-        // ---------------------------
+        const timeoutId = setTimeout(() => controller.abort(), 60000);
 
         try {
-            console.log("Starting HTTPS Upload to Render...");
+            console.log(`Connecting to: ${this.baseUrl || 'Internal Render Path'}...`);
             
+            // Note: If baseUrl is '', this becomes '/api/convert' (Internal Render)
+            // If baseUrl is 'https://...', it becomes 'https://.../api/convert' (GitHub)
             const response = await fetch(`${this.baseUrl}/api/convert`, {
                 method: 'POST',
                 body: formData,
-                signal: controller.signal // Connects the timeout to this fetch
+                signal: controller.signal 
             });
 
-            clearTimeout(timeoutId); // Success! Stop the timeout timer
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -41,10 +48,8 @@ const api = {
 
         } catch (error) {
             if (error.name === 'AbortError') {
-                console.error("Upload timed out. The network is likely blocking the data stream.");
-                if (replyHandler) replyHandler({ type: "error", error: "Connection timed out. The school firewall may be blocking large uploads." });
+                if (replyHandler) replyHandler({ type: "error", error: "Connection timed out. The network may be blocking large uploads." });
             } else {
-                console.error("Upload Error:", error);
                 if (replyHandler) replyHandler({ type: "error", error: error.message });
             }
         }
