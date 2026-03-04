@@ -5,7 +5,7 @@ const app = express();
 
 // 1. Allow GitHub Pages to talk to this API
 app.use(cors({
-  origin: ['https://your-github-username.github.io', 'http://localhost:3000'], 
+  origin: ['https://shibainu432.github.io', 'https://chunker-2.onrender.com', 'http://localhost:3000', 'http://localhost:10000'], 
   methods: ['GET', 'POST'],
   credentials: true
 }));
