@@ -1,23 +1,26 @@
+# Use Node 20 as the base
 FROM node:20
+
+# INSTALL JAVA (This is the missing piece!)
 RUN apt-get update && apt-get install -y default-jre
 
-# 1. Create the working directory
+# Create app directory
 WORKDIR /app
 
-# 2. Copy the backend files first to install dependencies
+# Install backend dependencies
 COPY backend/package*.json ./backend/
 RUN cd backend && npm install
 
-# 3. Copy the REST of the backend (server.js, etc.)
+# Copy backend code and the JAR file
 COPY backend/ ./backend/
 
-# 4. Copy the UI build folder into /app/build
-# This is what allows the server to serve the frontend
+# Copy the frontend build
 COPY backend/build/ ./build/
 
-# 5. Set environment variables
-ENV PORT=10000
+# Create folders for uploads and results to avoid permission errors
+RUN mkdir -p /app/backend/uploads && chmod 777 /app/backend/uploads
+
 EXPOSE 10000
 
-# 6. Start the server
+# Start the server
 CMD ["node", "backend/server.js"]
