@@ -10,7 +10,7 @@ console.log("Checking for build folder at:", buildPath);
 
 // 1. Middleware
 app.use(cors({
-  origin: ['', '', 'http://localhost:3000', 'http://localhost:10000'],
+  origin: ['https://chunker-2.onrender.com', 'https://shibainu432.github.io/Chunker', 'http://localhost:3000', 'http://localhost:10000'],
   methods: ['GET', 'POST'],
   credentials: true
 }));
