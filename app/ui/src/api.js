@@ -6,7 +6,7 @@ const api = {
             : ''), 
 
     // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
-    send: async function (file, targetVersion = 'JE_1_21', replyHandler, retries = 2) {
+    send: async function (file, targetVersion, replyHandler, retries = 2) {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('targetVersion', targetVersion);
