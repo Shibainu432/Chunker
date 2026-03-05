@@ -31,7 +31,7 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
 
     const inputPath = req.file.path;
     const outputPath = path.join(__dirname, 'converted_world.zip');
-    const jarPath = path.join(__dirname, 'chunker.jar'); // Ensure your jar is named this!
+    const jarPath = path.join(process.cwd(), 'backend', 'chunker.jar'); // Ensure your jar is named this!
 
     // The actual command that runs the Java tool
     // Note: You may need to change the arguments (-i, -o, etc) to match your specific jar
