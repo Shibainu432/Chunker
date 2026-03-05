@@ -1,15 +1,15 @@
 const api = {
-    // 1. Detect where the app is running
     baseUrl: window.location.hostname.includes('localhost') 
         ? 'http://localhost:10000' 
         : (window.location.hostname.includes('github.io') 
             ? 'https://chunker-2.onrender.com' 
             : ''), 
 
-    send: async function (file, targetVersion, replyHandler) { // Added targetVersion
+    // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
+    send: async function (file, targetVersion = 'JE_1_21', replyHandler, retries = 2) {
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('targetVersion', targetVersion); // Send the version choice to the server
+        formData.append('targetVersion', targetVersion);
 
         try {
             const response = await fetch(`${this.baseUrl}/api/convert`, {
@@ -19,41 +19,37 @@ const api = {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                throw new Error(errorText || "Conversion failed on server");
+                throw new Error(errorText || "Server Error");
             }
 
-            // --- Handle the Download ---
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.style.display = 'none';
             a.href = url;
             a.download = "converted_world.zip";
             document.body.appendChild(a);
             a.click();
-            
-            window.URL.revokeObjectURL(url);
             a.remove();
+            window.URL.revokeObjectURL(url);
 
             if (replyHandler) replyHandler({ type: "response", success: true });
 
         } catch (error) {
-            // If we have retries left, try again (helps with SSL_BAD_RECORD errors)
+            // Now 'retries' will be defined and this won't crash
             if (retries > 0) {
-                console.warn("Network glitch detected. Retrying...");
-                return this.send(file, replyHandler, retries - 1);
+                console.warn(`Retry attempt ${3 - retries}: logic error or network glitch.`);
+                return this.send(file, targetVersion, replyHandler, retries - 1);
             }
             
-            console.error("API Error:", error);
+            console.error("Final API Error:", error);
             if (replyHandler) replyHandler({ 
                 type: "error", 
-                error: "Connection error: Your network or browser might be blocking the file upload." 
+                error: "Connection reset. Try a smaller zip file or disable VPN/Antivirus." 
             });
         }
     },
-
-    connect: function (cb) { if(cb) cb(); },
-    isConnected: function () { return true; }
+    connect: (cb) => { if(cb) cb(); },
+    isConnected: () => true
 };
 
 export default api;
