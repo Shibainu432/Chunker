@@ -11,7 +11,7 @@ const api = {
 
     send: async function (file, replyHandler) {
         const formData = new FormData();
-        formData.append('file', file); 
+        formData.append('file', worldFile);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000);
