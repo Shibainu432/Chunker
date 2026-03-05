@@ -35,7 +35,7 @@ const upload = multer({ storage: storage });
 
 app.post('/api/convert', upload.single('file'), (req, res) => {
     const file = req.file;
-    const targetVersion = req.body.targetVersion || 'JE_1_21'; 
+    const targetVersion = req.body.targetVersion || 'JAVA_1_21';
     
     console.log(`Received file: ${file ? file.filename : "None"}. Target: ${targetVersion}`);
 
