@@ -43,12 +43,18 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
     const jarPath = path.join(__dirname, 'chunker.jar');
 
     // Basic Java execution command
-    const command = `java -jar "${jarPath}" "${inputPath}" "${outputPath}"`;
+    const outputDir = path.join(uploadDir, 'output-' + Date.now());
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
+
+    const command = `java -jar "${jarPath}" -f JE_1_20_1 -i "${inputPath}" -o "${outputDir}"`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
             console.error(`Execution Error: ${error.message}`);
-            return res.status(500).json({ error: "Java conversion failed", details: error.message });
+            // Log stdout and stderr so we can see what Chunker says
+            console.log(`Chunker Output: ${stdout}`);
+            console.error(`Chunker Error: ${stderr}`);
+            return res.status(500).json({ error: "Java conversion failed", details: stderr || error.message });
         }
         
         // If successful, send the file back
