@@ -1,73 +1,72 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { exec } = require('child_process'); // Needed to run Java
-const multer = require('multer'); // Needed to handle file uploads
+const { exec } = require('child_process');
+const multer = require('multer');
 const fs = require('fs');
 const app = express();
 
-const buildPath = path.resolve(process.cwd(), 'build');
-const upload = multer({ dest: 'uploads/' }); // Temporary folder for uploaded worlds
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-app.use((error, req, res, next) => {
-  if (error instanceof multer.MulterError) {
-    console.error("Multer Error:", error.message);
-    return res.status(400).json({ error: `Upload error: ${error.message}. Ensure the field name is 'file'.` });
-  }
-  next(error);
-});
+const buildPath = path.resolve(process.cwd(), 'build');
+
+// CORS must be configured precisely
+app.use(cors({
+    origin: ['https://shibainu432.github.io', 'https://chunker-2.onrender.com'],
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
 
 app.use(express.json());
 app.use(express.static(buildPath));
 
-// --- THE CONVERT ROUTE ---
-// We use upload.single('file') to catch the world file sent from the frontend
+// Multer setup with specific destination
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
+});
+const upload = multer({ storage: storage });
+
 app.post('/api/convert', upload.single('file'), (req, res) => {
-    console.log("POST request received. Starting conversion...");
+    console.log("File received:", req.file ? req.file.filename : "No file");
 
     if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
+        return res.status(400).json({ error: "No file received by server" });
     }
 
     const inputPath = req.file.path;
-    const outputPath = path.join(__dirname, 'converted_world.zip');
-    const jarPath = path.join(process.cwd(), 'backend', 'chunker.jar'); // Ensure your jar is named this!
+    const outputPath = path.join(uploadDir, 'converted-' + Date.now() + '.zip');
+    const jarPath = path.join(__dirname, 'chunker.jar');
 
-    // The actual command that runs the Java tool
-    // Note: You may need to change the arguments (-i, -o, etc) to match your specific jar
+    // Basic Java execution command
     const command = `java -jar "${jarPath}" "${inputPath}" "${outputPath}"`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Java Error: ${error}`);
-            return res.status(500).json({ error: "Java conversion failed." });
+            console.error(`Execution Error: ${error.message}`);
+            return res.status(500).json({ error: "Java conversion failed", details: error.message });
         }
-
-        console.log("Conversion complete!");
         
-        // Send back a success message and a path to download the file
-        res.json({ 
-            message: "Conversion Complete!",
-            downloadUrl: "/api/download" 
+        // If successful, send the file back
+        res.download(outputPath, 'converted_world.zip', (err) => {
+            if (err) console.error("Download Error:", err);
+            // Cleanup: Delete files after download to save space
+            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+            // Note: Don't unlink outputPath immediately or the download fails
         });
     });
 });
 
-// Route to let the user download the finished file
-app.get('/api/download', (req, res) => {
-    const file = path.join(__dirname, 'converted_world.zip');
-    res.download(file);
-});
-
-// --- CATCH-ALL ---
+// Catch-all
 app.get('*', (req, res) => {
-  const indexPath = path.join(buildPath, 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) res.status(500).send("Frontend build missing.");
-  });
+    res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
