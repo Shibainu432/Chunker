@@ -1,37 +1,29 @@
 const api = {
-    // 1. Fixed the baseUrl logic to correctly detect where you are
+    // 1. Detect where the app is running
     baseUrl: window.location.hostname.includes('localhost') 
         ? 'http://localhost:10000' 
         : (window.location.hostname.includes('github.io') 
             ? 'https://chunker-2.onrender.com' 
             : ''), 
 
-    send: async function (file, replyHandler) {
+    send: async function (file, replyHandler, retries = 1) {
         const formData = new FormData();
-        
-        // 2. FIXED: Changed 'worldFile' to 'file' so it matches the function argument
         formData.append('file', file);
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 1 minute timeout
+        console.log(`Connecting to: ${this.baseUrl || 'Internal Render Path'}...`);
 
         try {
-            console.log(`Connecting to: ${this.baseUrl || 'Internal Render Path'}...`);
-            
             const response = await fetch(`${this.baseUrl}/api/convert`, {
                 method: 'POST',
-                body: formData,
-                signal: controller.signal 
+                body: formData
             });
-
-            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 const errorText = await response.text();
                 throw new Error(errorText || "Conversion failed on server");
             }
 
-            // 3. Handle the download automatically
+            // --- Handle the Download ---
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -47,12 +39,17 @@ const api = {
             if (replyHandler) replyHandler({ type: "response", success: true });
 
         } catch (error) {
-            console.error("API Error:", error);
-            if (error.name === 'AbortError') {
-                if (replyHandler) replyHandler({ type: "error", error: "Connection timed out. The world might be too large." });
-            } else {
-                if (replyHandler) replyHandler({ type: "error", error: error.message });
+            // If we have retries left, try again (helps with SSL_BAD_RECORD errors)
+            if (retries > 0) {
+                console.warn("Network glitch detected. Retrying...");
+                return this.send(file, replyHandler, retries - 1);
             }
+            
+            console.error("API Error:", error);
+            if (replyHandler) replyHandler({ 
+                type: "error", 
+                error: "Connection error: Your network or browser might be blocking the file upload." 
+            });
         }
     },
 
