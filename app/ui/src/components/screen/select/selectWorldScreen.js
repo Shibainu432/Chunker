@@ -207,7 +207,7 @@ handleData = async (files) => {
 
     showFolderBrowser = () => this.folderInput.click();
 
-startSession = () => {
+    startSession = () => {
         if (!this.state.actualFile) {
             this.app.showError("No file", "Please select a world first.");
             return;
@@ -215,10 +215,14 @@ startSession = () => {
 
         this.setState({ detecting: true });
 
-        api.send(this.state.actualFile, (message) => {
+        // Added "JE_1_21" as the second argument so api.js knows what to do
+        api.send(this.state.actualFile, "JE_1_21", (message) => {
             this.setState({ detecting: false });
             if (message.type === "error") {
                 this.app.showError("Error", message.error);
+            } else if (message.type === "response" && message.success) {
+                // Optional: Move to a success screen or show a "Done" message
+                console.log("Conversion successful!");
             }
         });
     };
