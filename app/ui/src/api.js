@@ -6,11 +6,10 @@ const api = {
             ? 'https://chunker-2.onrender.com' 
             : ''), 
 
-    send: async function (file, replyHandler, retries = 1) {
+    send: async function (file, targetVersion, replyHandler) { // Added targetVersion
         const formData = new FormData();
         formData.append('file', file);
-
-        console.log(`Connecting to: ${this.baseUrl || 'Internal Render Path'}...`);
+        formData.append('targetVersion', targetVersion); // Send the version choice to the server
 
         try {
             const response = await fetch(`${this.baseUrl}/api/convert`, {
