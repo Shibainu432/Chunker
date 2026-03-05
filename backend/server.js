@@ -16,10 +16,14 @@ const buildPath = path.resolve(process.cwd(), 'build');
 
 // CORS must be configured precisely
 app.use(cors({
-    origin: ['https://shibainu432.github.io', 'https://chunker-2.onrender.com'],
-    methods: ['GET', 'POST'],
+    origin: true, // Dynamically allow whatever origin is sending the request
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
+
+// Add this "Pre-flight" handler manually just in case
+app.options('*', cors());
 
 app.use(express.json());
 app.use(express.static(buildPath));
