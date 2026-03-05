@@ -20,7 +20,7 @@ app.use(express.static(buildPath));
 
 // --- THE CONVERT ROUTE ---
 // We use upload.single('file') to catch the world file sent from the frontend
-app.post('/api/convert', upload.single('world'), (req, res) => {
+app.post('/api/convert', upload.single('file'), (req, res) => {
     console.log("POST request received. Starting conversion...");
 
     if (!req.file) {
