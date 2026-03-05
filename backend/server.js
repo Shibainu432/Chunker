@@ -32,37 +32,59 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 app.post('/api/convert', upload.single('file'), (req, res) => {
-    console.log("File received:", req.file ? req.file.filename : "No file");
+    // 1. Get the file and the version choice from the request
+    const file = req.file;
+    const targetVersion = req.body.targetVersion || 'JE_1_21'; // Default if user didn't pick
+    
+    console.log(`Received file: ${file ? file.filename : "None"}. Target: ${targetVersion}`);
 
-    if (!req.file) {
+    if (!file) {
         return res.status(400).json({ error: "No file received by server" });
     }
 
-    const inputPath = req.file.path;
-    const outputPath = path.join(uploadDir, 'converted-' + Date.now() + '.zip');
+    const inputPath = file.path;
     const jarPath = path.join(__dirname, 'chunker.jar');
+    
+    // 2. Create a unique folder for the conversion output
+    const conversionId = Date.now();
+    const outputDir = path.join(uploadDir, 'output-' + conversionId);
+    const finalZipPath = path.join(uploadDir, 'converted-' + conversionId + '.zip');
 
-    // Basic Java execution command
-    const outputDir = path.join(uploadDir, 'output-' + Date.now());
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    const command = `java -jar "${jarPath}" -f JE_1_20_1 -i "${inputPath}" -o "${outputDir}"`;
+    // 3. The Chunker Command
+    // -f is the format (JE_1_21), -i is input, -o is output folder
+    const command = `java -jar "${jarPath}" -f ${targetVersion} -i "${inputPath}" -o "${outputDir}"`;
+
+    console.log("Executing Chunker...");
 
     exec(command, (error, stdout, stderr) => {
         if (error) {
-            console.error(`Execution Error: ${error.message}`);
-            // Log stdout and stderr so we can see what Chunker says
-            console.log(`Chunker Output: ${stdout}`);
-            console.error(`Chunker Error: ${stderr}`);
+            console.error(`Chunker failed: ${stderr || error.message}`);
             return res.status(500).json({ error: "Java conversion failed", details: stderr || error.message });
         }
+
+        // 4. IMPORTANT: Chunker outputs a FOLDER. We need to zip it to send it.
+        // We use a simple zip command (available on Render's Linux environment)
+        const zipCommand = `zip -r "${finalZipPath}" .`;
         
-        // If successful, send the file back
-        res.download(outputPath, 'converted_world.zip', (err) => {
-            if (err) console.error("Download Error:", err);
-            // Cleanup: Delete files after download to save space
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            // Note: Don't unlink outputPath immediately or the download fails
+        exec(zipCommand, { cwd: outputDir }, (zipErr) => {
+            if (zipErr) {
+                console.error("Zipping failed:", zipErr);
+                return res.status(500).json({ error: "Failed to package world" });
+            }
+
+            // 5. Send the finished ZIP to the user
+            res.download(finalZipPath, 'converted_world.zip', (err) => {
+                // Cleanup: Delete the temp files after sending
+                try {
+                    if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
+                    // fs.rmSync(outputDir, { recursive: true, force: true });
+                    // fs.unlinkSync(finalZipPath); 
+                } catch (cleanupErr) {
+                    console.error("Cleanup error:", cleanupErr);
+                }
+            });
         });
     });
 });
