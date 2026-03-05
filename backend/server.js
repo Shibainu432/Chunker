@@ -9,11 +9,13 @@ const app = express();
 const buildPath = path.resolve(process.cwd(), 'build');
 const upload = multer({ dest: 'uploads/' }); // Temporary folder for uploaded worlds
 
-app.use(cors({
-  origin: ['https://shibainu432.github.io', 'https://chunker-2.onrender.com', 'http://localhost:3000'],
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
+app.use((error, req, res, next) => {
+  if (error instanceof multer.MulterError) {
+    console.error("Multer Error:", error.message);
+    return res.status(400).json({ error: `Upload error: ${error.message}. Ensure the field name is 'file'.` });
+  }
+  next(error);
+});
 
 app.use(express.json());
 app.use(express.static(buildPath));
