@@ -14,9 +14,11 @@ if (!fs.existsSync(uploadDir)) {
 
 // 2. CORS: Replace 'yourusername' with Shibainu432
 app.use(cors({
-    origin: ["https://Shibainu432.github.io", "http://localhost:3000"],
+    origin: [
+        "https://shibainu432.github.io", // GitHub Frontend
+        /\.render\.com$/                  // Render Frontend (mirrored)
+    ],
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
 
