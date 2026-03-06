@@ -1,26 +1,22 @@
-# Use Node 20 as the base
+# Use Node 20
 FROM node:20
 
-# INSTALL JAVA (This is the missing piece!)
+# Install Java
 RUN apt-get update && apt-get install -y default-jre
 
-# Create app directory
+# Set Workdir
 WORKDIR /app
 
-# Install backend dependencies
-COPY backend/package*.json ./backend/
-RUN cd backend && npm install
+# Copy and Install
+COPY . .
+RUN npm install
 
-# Copy backend code and the JAR file
-COPY backend/ ./backend/
+# Build React
+RUN CI=false npm run build
 
-# Copy the frontend build
-COPY backend/build/ ./build/
-
-# Create folders for uploads and results to avoid permission errors
+# Setup folders
 RUN mkdir -p /app/backend/uploads && chmod 777 /app/backend/uploads
 
+# Launch
 EXPOSE 10000
-
-# Start the server
 CMD ["node", "backend/server.js"]
