@@ -6,15 +6,15 @@ const multer = require('multer');
 const fs = require('fs');
 const app = express();
 
-// 1. Pathing Fix: Ensure we find the 'uploads' and 'build' folders correctly
-const uploadDir = path.join(__dirname, 'uploads');
+// 1. Pathing Fix: Since server.js is in 'backend/', go UP (..) then into 'uploads'
+const uploadDir = path.join(__dirname, 'uploads'); 
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// 2. CORS Fix: This allows your GitHub Pages site to talk to this Render server
+// 2. CORS: Replace 'yourusername' with Shibainu432
 app.use(cors({
-    origin: ["https://yourusername.github.io", "http://localhost:3000"], // REPLACE 'yourusername' with your GitHub name
+    origin: ["https://Shibainu432.github.io", "http://localhost:3000"],
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -23,8 +23,10 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// 3. Static Files: Serve the React frontend from the 'build' folder
-app.use(express.static(path.join(__dirname, 'build')));
+// 3. Static Files Fix: Reach UP and over into 'app/build'
+// This tells the backend where the website files are
+const buildPath = path.join(__dirname, '..', 'app', 'build');
+app.use(express.static(buildPath));
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
@@ -41,12 +43,31 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
     }
 
     const inputPath = file.path;
+    // Assuming chunker.jar is in the backend folder with server.js
     const jarPath = path.join(__dirname, 'chunker.jar');
     const conversionId = Date.now();
     const outputDir = path.join(uploadDir, 'output-' + conversionId);
-    const finalZipPath = path.join(uploadDir, 'converted-' + conversionId + '.zip');
-
+    
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-    // The Java command to run the converter
-    const command = `java -jar
+    // Java command logic continues below...
+    const command = `java -jar "${jarPath}" --input "${inputPath}" --output "${outputDir}" --target "${targetVersion}"`;
+    
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error: ${error.message}`);
+            return res.status(500).json({ error: "Conversion failed" });
+        }
+        res.json({ message: "Conversion successful!", id: conversionId });
+    });
+});
+
+// Catch-all route to serve React's index.html for any non-API routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+});
+
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
