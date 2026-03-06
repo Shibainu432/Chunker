@@ -1,9 +1,9 @@
 const api = {
     baseUrl: window.location.hostname.includes('localhost') 
         ? 'http://localhost:10000' 
-        : (window.location.hostname.includes('github.io') 
+        : (window.location.hostname.includes('github.io') || window.location.hostname.includes('onrender.com')
             ? 'https://chunker-2.onrender.com' 
-            : ''), 
+            : ''),
 
     // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
     send: async function (file, targetVersion = 'JE_1_21', replyHandler, retries = 2) {
