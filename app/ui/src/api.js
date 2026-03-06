@@ -8,20 +8,25 @@ const api = {
     // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
     send: async function (file, targetVersion = 'JE_1_21', replyHandler, retries = 2) {
     const formData = new FormData();
-    // We wrap the file in a new Blob to "reset" the stream metadata
     const fileBlob = new Blob([file], { type: 'application/zip' });
     formData.append('file', fileBlob, "world.zip");
     formData.append('targetVersion', targetVersion);
+
+    // Create a controller to handle the timeout
+    const controller = new AbortController();
+    // Set timeout to 5 minutes (300,000 milliseconds) for slow uploads
+    const timeoutId = setTimeout(() => controller.abort(), 300000); 
 
     try {
         const response = await fetch(`${this.baseUrl}/api/convert`, {
             method: 'POST',
             body: formData,
-            // 'manual' redirect and 'omit' credentials make the request 
-            // look "anonymous" to your administrator firewall
-            redirect: 'manual',
+            signal: controller.signal, // Connect the timeout signal
+            redirect: 'follow', // Changed from 'manual' to be more stable
             credentials: 'omit',
         });
+
+        clearTimeout(timeoutId); // Cancel the timeout if it succeeds
 
         if (!response.ok) throw new Error("Server Error");
 
