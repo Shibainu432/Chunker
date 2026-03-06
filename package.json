@@ -1,13 +1,21 @@
 {
-"name": "chunker-root",
-"version": "1.0.0",
-"scripts": {
-"start": "node backend/server.js",
-"build": "react-scripts build",
-"deploy-all": "cd app/ui && npm run build && npm run deploy && cd ../.. && rm -rf backend/build && cp -r app/ui/build backend/build"
-},
-"dependencies": {
-"express": "^4.18.2",
-"cors": "^2.8.5"
-}
+  "name": "minecraft-chunker-app",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node backend/server.js",
+    "build": "react-scripts build"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "adm-zip": "^0.5.10"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead", "not op_mini all"],
+    "development": ["last 1 chrome version", "last 1 firefox version", "last 1 safari version"]
+  }
 }
