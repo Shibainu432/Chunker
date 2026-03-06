@@ -2,7 +2,9 @@
   "name": "minecraft-chunker-app",
   "version": "1.0.0",
   "scripts": {
-    "start": "node backend/server.js",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
+    "start": "react-scripts start",
     "build": "react-scripts build"
   },
   "dependencies": {
