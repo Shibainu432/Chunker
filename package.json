@@ -2,10 +2,9 @@
   "name": "minecraft-chunker-app",
   "version": "1.0.0",
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "react-scripts build"
+    "build": "react-scripts build",
+    "predeploy": "npm run build --prefix ui",
+    "deploy": "gh-pages -d ui/build"
   },
   "dependencies": {
     "react": "^18.2.0",
