@@ -162,8 +162,14 @@ app.post('/api/convert', upload.single('file'), (req, res) => {
     });
 });
 
-// Catch-all route to serve React's index.html
+// IMPORTANT: API routes must be defined BEFORE the catch-all route
+
+// Catch-all route to serve React's index.html (ONLY for non-API routes)
 app.get('*', (req, res) => {
+    // Don't serve index.html for API routes that failed
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: "API endpoint not found" });
+    }
     res.sendFile(path.join(buildPath, 'index.html'));
 });
 
