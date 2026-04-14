@@ -8,8 +8,8 @@ WORKDIR /app
 # Copy the entire project
 COPY . .
 
-# 1. Build the Frontend
-RUN cd app && npm install && CI=false npm run build
+# 1. Build the Frontend from the correct directory (app/ui is the root)
+RUN cd app/ui && npm install && CI=false npm run build
 
 # 2. Setup the Backend
 RUN cd backend && npm install
