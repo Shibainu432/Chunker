@@ -27,7 +27,7 @@ app.use(express.json());
 
 // 3. Static Files Fix: Reach UP and over into 'app/build'
 // This tells the backend where the website files are
-const buildPath = path.join(__dirname, '..', 'app', 'build');
+const buildPath = path.join(__dirname, '..', 'app', 'ui', 'build');
 app.use(express.static(buildPath));
 
 const storage = multer.diskStorage({
