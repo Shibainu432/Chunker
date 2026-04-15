@@ -7,6 +7,13 @@ const fs = require('fs');
 const extract = require('extract-zip');
 const app = express();
 
+app.use(cors({
+    origin: 'htpps://shibainu432.github.io',
+    credentials: true,
+    methids: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
+}));
+
 // 1. Pathing Fix: Since server.js is in 'backend/', go UP (..) then into 'uploads'
 const uploadDir = path.join(__dirname, 'uploads'); 
 if (!fs.existsSync(uploadDir)) {
