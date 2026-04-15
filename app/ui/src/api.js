@@ -7,6 +7,7 @@ const api = {
 
     // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
     send: async function (file, targetVersion = 'JE_1_21', replyHandler, retries = 2) {
+    console.log(`Starting upload to ${this.baseUrl}/api/convert...`);
     const formData = new FormData();
     const fileBlob = new Blob([file], { type: 'application/zip' });
     formData.append('file', fileBlob, "world.zip");
@@ -27,9 +28,15 @@ const api = {
         });
 
         clearTimeout(timeoutId); // Cancel the timeout if it succeeds
+        console.log(`Response received: ${response.status} ${response.statusText}`);
 
-        if (!response.ok) throw new Error("Server Error");
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`Server error details: ${errorText}`);
+            throw new Error("Server Error");
+        }
 
+        console.log("Download starting...");
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -38,10 +45,12 @@ const api = {
         document.body.appendChild(a);
         a.click();
         a.remove();
+        console.log("Download triggered!");
 
         if (replyHandler) replyHandler({ type: "response", success: true });
 
     } catch (error) {
+        console.error(`Attempt failed (${retries} retries left):`, error);
         if (retries > 0) {
             return this.send(file, targetVersion, replyHandler, retries - 1);
         }

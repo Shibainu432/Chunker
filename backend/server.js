@@ -21,12 +21,24 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // 2. CORS: Allow requests from GitHub Pages and Render
+const allowedOrigins = [
+    "https://shibainu432.github.io",
+    "https://shibainu432.github.io/Chunker",
+    "http://localhost:3000",
+    "http://localhost:10000"
+];
+
 app.use(cors({
-    origin: [
-        "https://shibainu432.github.io",
-        /\.render\.com$/
-    ],
+    origin: function (origin, callback) {
+        // allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.render.com')) {
+            return callback(null, true);
+        }
+        return callback(null, true); // Temporarily allow all for debugging if needed, or change to restricted
+    },
     methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
 
