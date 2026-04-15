@@ -7,20 +7,9 @@ const fs = require('fs');
 const extract = require('extract-zip');
 const app = express();
 
-app.use(cors({
-    origin: 'htpps://shibainu432.github.io',
-    credentials: true,
-    methids: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
-}));
-
-// 1. Pathing Fix: Since server.js is in 'backend/', go UP (..) then into 'uploads'
-const uploadDir = path.join(__dirname, 'uploads'); 
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// 2. CORS: Allow requests from GitHub Pages and Render
+// ============================================
+// CORS Configuration (SINGLE, CLEAN SETUP)
+// ============================================
 const allowedOrigins = [
     "https://shibainu432.github.io",
     "https://shibainu432.github.io/Chunker",
@@ -30,12 +19,17 @@ const allowedOrigins = [
 
 app.use(cors({
     origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps or curl requests)
+        // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
+        
+        // Check if origin is in whitelist or ends with .render.com
         if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.render.com')) {
             return callback(null, true);
         }
-        return callback(null, true); // Temporarily allow all for debugging if needed, or change to restricted
+        
+        // Log unexpected origins but allow (for debugging)
+        console.log('CORS request from:', origin);
+        return callback(null, true);
     },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -45,11 +39,20 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json());
 
-// 3. Static Files Fix: Reach UP and over into 'app/ui/build'
+// ============================================
+// Directory Setup
+// ============================================
+const uploadDir = path.join(__dirname, 'uploads'); 
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 const buildPath = path.join(__dirname, '..', 'app', 'ui', 'build');
 app.use(express.static(buildPath));
 
-// DIAGNOSTIC ENDPOINT
+// ============================================
+// Health Check Endpoint
+// ============================================
 app.get('/api/health', (req, res) => {
     const jarPath = path.join(__dirname, 'chunker.jar');
     const jarExists = fs.existsSync(jarPath);
@@ -71,6 +74,9 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// ============================================
+// File Upload & Conversion Endpoint
+// ============================================
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname)
@@ -83,13 +89,14 @@ app.post('/api/convert', upload.single('file'), async (req, res) => {
     
     console.log('\n=== CONVERSION REQUEST ===');
     console.log('Target version:', targetVersion);
+    console.log('File received:', file ? file.originalname : 'NONE');
     
     if (!file) {
         console.error('ERROR: No file received');
         return res.status(400).json({ error: "No file received by server" });
     }
 
-    console.log('File received:', file.originalname, '(' + file.size + ' bytes)');
+    console.log('File size:', file.size, 'bytes');
     
     const uploadedZip = file.path;
     const jarPath = path.join(__dirname, 'chunker.jar');
@@ -235,18 +242,23 @@ app.post('/api/convert', upload.single('file'), async (req, res) => {
     }
 });
 
-// IMPORTANT: API routes must be defined BEFORE the catch-all route
-
-// Catch-all route to serve React's index.html (ONLY for non-API routes)
+// ============================================
+// Catch-all route for React SPA
+// ============================================
+// API routes must be defined BEFORE this
 app.get('*', (req, res) => {
-    // Don't serve index.html for API routes that failed
+    // Don't serve index.html for API routes
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: "API endpoint not found" });
     }
     res.sendFile(path.join(buildPath, 'index.html'));
 });
 
+// ============================================
+// Start Server
+// ============================================
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`CORS allowed origins:`, allowedOrigins.join(', '));
 });
