@@ -1,4 +1,4 @@
-    startSession = () => {
+startSession = () => {
         if (!this.state.actualFile) {
             this.app.showError("No file", "Please select a world first.");
             return;
@@ -8,7 +8,7 @@
         this.setState({ detecting: true });
 
         // Send the file to the backend
-        api.send(this.state.actualFile, "JE_1_21", (message) => {
+        api.send(this.state.actualFile, "JAVA_1_21", (message) => {
             this.setState({ detecting: false });
             
             if (message.type === "error") {
