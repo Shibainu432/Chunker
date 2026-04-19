@@ -1,3 +1,5 @@
+import api from '../../../../api';  // Adjust based on folder depth
+
 startSession = () => {
         if (!this.state.actualFile) {
             this.app.showError("No file", "Please select a world first.");
