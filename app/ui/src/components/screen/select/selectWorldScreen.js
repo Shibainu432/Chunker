@@ -1,4 +1,4 @@
-import api from '../../../../api';  // Adjust based on folder depth
+import api from '../../../api';  // Adjust based on folder depth
 
 startSession = () => {
         if (!this.state.actualFile) {
