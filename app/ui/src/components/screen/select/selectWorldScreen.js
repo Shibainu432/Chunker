@@ -1,6 +1,8 @@
-import api from '../../../api';  // Adjust based on folder depth
+import {Component} from "react";
+import api from "../../api";  // Go up 2 levels from select/ to src/
 
-startSession = () => {
+export class SelectWorldScreen extends Component {
+    startSession = () => {
         if (!this.state.actualFile) {
             this.app.showError("No file", "Please select a world first.");
             return;
@@ -21,3 +23,4 @@ startSession = () => {
             }
         });
     };
+}
