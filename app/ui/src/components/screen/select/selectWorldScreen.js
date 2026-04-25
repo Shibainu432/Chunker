@@ -1,5 +1,5 @@
 import {Component} from "react";
-import api from "../../api";  // Go up 2 levels from select/ to src/
+import api from "../../api";
 
 export class SelectWorldScreen extends Component {
     startSession = () => {
@@ -7,14 +7,9 @@ export class SelectWorldScreen extends Component {
             this.app.showError("No file", "Please select a world first.");
             return;
         }
-
-        // Set detecting to true to show the UI
         this.setState({ detecting: true });
-
-        // Send the file to the backend
         api.send(this.state.actualFile, "JAVA_1_21", (message) => {
             this.setState({ detecting: false });
-            
             if (message.type === "error") {
                 this.app.showError("Error", message.error);
             } else if (message.type === "response" && message.success) {
