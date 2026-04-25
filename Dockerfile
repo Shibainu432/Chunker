@@ -9,7 +9,9 @@ WORKDIR /app
 COPY . .
 
 # 1. Build the Frontend from the correct directory (app/ui is the root)
-RUN cd app/ui && npm install && CI=false npm run build
+WORKDIR /app/app/ui
+RUN npm install && CI=false npm run build
+WORKDIR /app
 
 # 2. Setup the Backend
 RUN cd backend && npm install
