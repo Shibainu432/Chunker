@@ -1,5 +1,5 @@
 import {Component} from "react";
-import api from "../../api";
+import api from "api";
 
 export class SelectWorldScreen extends Component {
     startSession = () => {
