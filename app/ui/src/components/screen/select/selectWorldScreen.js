@@ -1,5 +1,5 @@
 import {Component} from "react";
-import api from "api";
+import api from "../../../api";  // Back to relative path
 
 export class SelectWorldScreen extends Component {
     startSession = () => {
