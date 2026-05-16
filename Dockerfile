@@ -16,9 +16,11 @@ RUN cd app/ui && npm install && CI=false npm run build
 RUN cd backend && npm install
 
 # 3. Download the Chunker CLI JAR
-RUN wget -O backend/chunker.jar \
-    https://github.com/HiveGamesOSS/Chunker/releases/latest/download/chunker-cli.jar \
-    || echo "WARNING: JAR download failed"
+RUN wget -L --no-check-certificate \
+    "https://github.com/HiveGamesOSS/Chunker/releases/download/1.17.0/chunker-cli-1.17.0.jar" \
+    -O backend/chunker.jar && \
+    echo "JAR size: $(wc -c < backend/chunker.jar) bytes" && \
+    file backend/chunker.jar
 
 # 4. Create upload directory
 RUN mkdir -p backend/uploads && chmod 777 backend/uploads
