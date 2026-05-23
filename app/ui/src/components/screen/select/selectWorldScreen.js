@@ -227,7 +227,7 @@ export class SelectWorldScreen extends BaseScreen {
         // Create FormData to send file to backend
         const formData = new FormData();
         formData.append('file', file);
-        formData.append('targetVersion', 'JAVA_1_21');
+        formData.append('targetVersion', 'JAVA_1_21_0');
 
         // Send to backend API
         fetch('https://chunker-2.onrender.com/api/convert', {
