@@ -1,59 +1,172 @@
+// api.js - adapter that translates the original WebSocket-style API to REST
+let pendingFile = null;
+let pendingTargetVersion = 'JAVA_1_21_0';
+
+const BACKEND_URL = window.location.hostname.includes('localhost')
+    ? 'http://localhost:10000'
+    : 'https://chunker-2.onrender.com';
+
 const api = {
-    baseUrl: window.location.hostname.includes('localhost') 
-        ? 'http://localhost:10000' 
-        : (window.location.hostname.includes('github.io') || window.location.hostname.includes('onrender.com')
-            ? 'https://chunker-2.onrender.com' 
-            : ''),
+    // Called by selectWorldScreen to store the file before navigating
+    setFile: (file, targetVersion) => {
+        pendingFile = file;
+        if (targetVersion) pendingTargetVersion = targetVersion;
+    },
 
-    // IMPORTANT: Make sure 'retries = 2' is right here in the arguments!
-    send: async function (file, targetVersion = 'JAVA_1_21', replyHandler, retries = 2) {
-    const formData = new FormData();
-    const fileBlob = new Blob([file], { type: 'application/zip' });
-    formData.append('file', fileBlob, "world.zip");
-    formData.append('targetVersion', targetVersion);
+    getFile: () => pendingFile,
 
-    // Create a controller to handle the timeout
-    const controller = new AbortController();
-    // Set timeout to 5 minutes (300,000 milliseconds) for slow uploads
-    const timeoutId = setTimeout(() => controller.abort(), 300000); 
-
-    try {
-        const response = await fetch(`${this.baseUrl}/api/convert`, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal, // Connect the timeout signal
-            redirect: 'follow', // Changed from 'manual' to be more stable
-            credentials: 'omit',
-        });
-
-        clearTimeout(timeoutId); // Cancel the timeout if it succeeds
-
-        if (!response.ok) throw new Error("Server Error");
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "converted_world.zip";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        if (replyHandler) replyHandler({ type: "response", success: true });
-
-    } catch (error) {
-        if (retries > 0) {
-            return this.send(file, targetVersion, replyHandler, retries - 1);
+    send: function (obj, replyHandler) {
+        // Route each message type appropriately
+        switch (obj.type) {
+            case 'flow':
+                this._handleFlow(obj, replyHandler);
+                break;
+            case 'settings':
+            case 'mappings':
+                // ACK immediately — your backend handles everything in one shot
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+            default:
+                if (replyHandler) replyHandler({ type: 'response' });
         }
-        console.error("Final API Error:", error);
-        if (replyHandler) replyHandler({ 
-            type: "error", 
-            error: "Your administrator/network is blocking the upload. Try a smaller world or use Firefox." 
-        });
-    }
-},
-    connect: (cb) => { if(cb) cb(); },
-    isConnected: () => true
+    },
+
+    _handleFlow: function (obj, replyHandler) {
+        switch (obj.method) {
+            case 'select_world':
+                // Return mock session data so the app can navigate to ModeScreen
+                if (replyHandler) replyHandler({
+                    type: 'response',
+                    output: {
+                        session: 'web-session',
+                        version: {
+                            input: { id: 'JAVA_1_21_0' },
+                            warnings: null,
+                            writers: [
+                                { id: 'JAVA_1_21_0', version: '1.21.0' },
+                                { id: 'JAVA_1_20_4', version: '1.20.4' },
+                                { id: 'BEDROCK_1_21_0', version: '1.21.0' },
+                            ]
+                        },
+                        preloaded_settings: {}
+                    }
+                });
+                break;
+
+            case 'generate_settings':
+                // Return minimal settings so WorldSettingsTab doesn't crash
+                replyHandler({ type: 'progress', continue: true, percentage: 0.5, animated: true });
+                setTimeout(() => {
+                    replyHandler({
+                        type: 'response',
+                        output: {
+                            session: 'web-session',
+                            dimensions: [
+                                'minecraft:overworld',
+                                'minecraft:the_nether',
+                                'minecraft:the_end'
+                            ],
+                            settings: {
+                                'World Settings': [
+                                    { name: 'LevelName', value: 'World', type: 'String' },
+                                    { name: 'SpawnX', value: 0, type: 'Int32' },
+                                    { name: 'SpawnY', value: 64, type: 'Int32' },
+                                    { name: 'SpawnZ', value: 0, type: 'Int32' },
+                                ],
+                                'Game Rules': [],
+                            }
+                        }
+                    });
+                }, 500);
+                break;
+
+            case 'generate_preview':
+                // Skip preview — return empty
+                replyHandler({ type: 'response', output: '' });
+                break;
+
+            case 'convert':
+                this._doConvert(obj, replyHandler);
+                break;
+
+            case 'save':
+                // Download is triggered by the href in saveScreen, just ACK
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+
+            case 'cancel':
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+
+            default:
+                if (replyHandler) replyHandler({ type: 'response' });
+        }
+    },
+
+    _doConvert: async function (obj, replyHandler) {
+        const file = pendingFile;
+        if (!file) {
+            replyHandler({ type: 'error', error: 'No file selected.' });
+            return;
+        }
+
+        replyHandler({ type: 'progress', continue: true, percentage: 0.1, animated: true });
+
+        const formData = new FormData();
+        // Pass the File object directly — don't re-wrap in a Blob,
+        // it loses the filename and confuses multipart parsing
+        formData.append('file', file, file.name || 'world.zip');
+        formData.append('targetVersion', obj.outputType || pendingTargetVersion);
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 300000);
+
+        try {
+            replyHandler({ type: 'progress', continue: true, percentage: 0.3, animated: true });
+
+            const response = await fetch(`${BACKEND_URL}/api/convert`, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
+                credentials: 'omit',
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                const text = await response.text().catch(() => 'Unknown server error');
+                throw new Error(`Server error ${response.status}: ${text}`);
+            }
+
+            replyHandler({ type: 'progress', continue: true, percentage: 0.9, animated: false });
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+
+            replyHandler({
+                type: 'response',
+                output: {
+                    download: downloadUrl,
+                    anonymousId: '',
+                    missingIdentifiers: []
+                }
+            });
+
+        } catch (error) {
+            clearTimeout(timeout);
+            console.error('Convert error:', error);
+            replyHandler({
+                type: 'error',
+                error: error.name === 'AbortError'
+                    ? 'Request timed out (5 min limit). Try a smaller world.'
+                    : error.message
+            });
+        }
+    },
+
+    connect: (cb) => { if (cb) cb(); },
+    isConnected: () => true,
+    close: () => {}
 };
 
 export default api;
