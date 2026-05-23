@@ -1,10 +1,10 @@
 FROM node:20
 
-# Install Java and Zip
+# Install Java 17 and Zip
 RUN apt-get update && apt-get install -y \
-openjdk-17-jre-headless \
-zip wget && \
-rm -rf /var/lib/apt/lists/*
+    openjdk-17-jre-headless \
+    zip wget && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory to repo root
 WORKDIR /app
