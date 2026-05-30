@@ -1,279 +1,235 @@
-import React, {Component} from "react";
-import {SelectWorldScreen} from "./screen/select/selectWorldScreen";
-import api from "../api";
-import {ProgressTracker} from "./progress";
-import {Header} from "./page/header";
-import {StepDisplay} from "./page/stepDisplay";
-import {ErrorDisplay} from "./modal/errorDisplay";
-import {Footer} from "./page/footer";
-import {decode} from "base64-arraybuffer"
-import {getVersionName} from "./screen/mode/modeOption";
+// api.js — translates the original WebSocket-style message-passing API into
+// REST calls against the Render backend.  Drop this into app/ui/src/api.js.
 
-export class App extends Component {
-    errorModal = React.createRef();
-    previewProgress = new ProgressTracker("Generating world preview", (newState) => this.setState({previewProgress: newState}), () => {
-        this.cancelTask()
-    });
-    settingsProgress = new ProgressTracker("Grabbing world information", (newState) => this.setState({settingsProgress: newState}));
-    screen = React.createRef();
-    defaultConverterSettings = {
-        customIdentifiers: true,
-        blockConnections: true,
-        itemConversion: true,
-        lootTableConversion: true,
-        mapConversion: true,
-        enableCompact: true,
-        discardEmptyChunks: false,
-        preventYBiomeBlending: false
-    };
-    state = {
-        previewProgress: this.previewProgress.state,
-        settingsProgress: this.previewProgress.state,
-        previewData: undefined,
-        requestedPreview: false,
-        showError: false,
-        stage: 1,
-        screen: SelectWorldScreen,
-        sessionData: undefined,
-        inputType: undefined,
-        outputType: undefined,
-        settings: undefined,
-        worldSettingsTab: "World Settings",
-        dimensionSettingsTab: undefined,
-        editedSettings: {},
-        pruningSettings: [null, null, null],
-        mappings: {
-            identifiers: []
-        },
-        convertResult: undefined,
-        inputBlockSuggestions: [],
-        outputBlockSuggestions: [],
-        dimensionMapping: {
-            "OVERWORLD": "OVERWORLD",
-            "NETHER": "NETHER",
-            "THE_END": "THE_END"
-        },
-        converterSettings: {}
-    };
+let pendingFile = null;
+let pendingTargetVersion = 'JAVA_1_21_0';
 
-    getDimensionMappingsJSON = () => {
-        if (Object.keys(this.state.dimensionMapping).length !== 3 ||
-            Object.keys(this.state.dimensionMapping).filter(key => this.state.dimensionMapping[key] !== key).length > 0) {
-            return JSON.stringify(this.state.dimensionMapping);
-        } else {
-            return "{}";
-        }
-    };
+const BACKEND_URL = window.location.hostname.includes('localhost')
+    ? 'http://localhost:10000'
+    : 'https://chunker-2.onrender.com';
 
-    getBlockMappingsJSON = () => {
-        // Remove invalid mappings
-        let clone = JSON.parse(JSON.stringify(this.state.mappings));
-        // This checks we don't have empty identifiers, they should be null/undefined if valid (custom blocks)
-        clone.identifiers = clone.identifiers.filter(a => (a.old_identifier?.length ?? 1) > 0 && (a.new_identifier?.length ?? 1) > 0);
+// ---------------------------------------------------------------------------
+// Mock session / settings data — shaped to match the OLDER app.js (doc 71)
+// which uses "OVERWORLD" / "NETHER" / "THE_END" keys and array pruning.
+// ---------------------------------------------------------------------------
+const MOCK_SESSION = {
+    session: 'web-session',
+    version: {
+        input: { id: 'JAVA_1_21_0' },
+        warnings: null,
+        writers: [
+            { id: 'JAVA_1_21_0',  version: '1.21.0'  },
+            { id: 'JAVA_1_20_4',  version: '1.20.4'  },
+            { id: 'JAVA_1_20_0',  version: '1.20.0'  },
+            { id: 'JAVA_1_19_4',  version: '1.19.4'  },
+            { id: 'JAVA_1_18_2',  version: '1.18.2'  },
+            { id: 'JAVA_1_17_1',  version: '1.17.1'  },
+            { id: 'JAVA_1_16_5',  version: '1.16.5'  },
+            { id: 'BEDROCK_1_21_0', version: '1.21.0' },
+            { id: 'BEDROCK_1_20_0', version: '1.20.0' },
+            { id: 'BEDROCK_1_19_0', version: '1.19.0' },
+        ]
+    },
+    preloaded_settings: {}
+};
 
-        let mappings = JSON.stringify(clone);
-        return mappings.length === 18 ? "{}" : mappings;
-    };
-
-    getPruningJSON = () => {
-        let pruningSettings = this.state.pruningSettings;
-        if (!pruningSettings || pruningSettings.filter(a => a !== null).length === 0) return "{}";
-        return JSON.stringify({configs: pruningSettings});
-    };
-
-    getWorldName = () => {
-        return this.state.editedSettings["LevelName"] || (this.state.settings !== undefined && this.state.settings.settings["World Settings"].filter(a => a.name === "LevelName")[0].value) || "World";
-    };
-
-    setScreen = (newScreen) => {
-        this.setState({
-            screen: newScreen
-        });
-    };
-
-    updateSession = (sessionData) => {
-        let dimensions = sessionData?.preloaded_settings?.dimension_mappings ?? {};
-        if (Object.keys(dimensions).length === 0) {
-            dimensions = {
-                "OVERWORLD": "OVERWORLD",
-                "NETHER": "NETHER",
-                "THE_END": "THE_END"
-            };
-        }
-
-        let mappings = sessionData?.preloaded_settings?.block_mappings ?? sessionData?.preloaded_settings?.mappings ?? {
-            identifiers: []
-        };
-        if (!mappings.identifiers) {
-            mappings.identifiers = [];
-        }
-
-        let pruning = sessionData?.preloaded_settings?.pruning?.configs ?? [];
-        if (!pruning || pruning.filter(a => a !== null).length === 0) {
-            pruning = [null, null, null];
-        }
-
-        this.setState({
-            sessionData: sessionData,
-            inputType: sessionData.version.input,
-            mappings: mappings,
-            editedSettings: sessionData?.preloaded_settings?.world_settings ?? {},
-            converterSettings: sessionData?.preloaded_settings?.converter_settings ?? {},
-            dimensionMapping: dimensions,
-            pruningSettings: pruning
-        });
-    };
-
-    savePreviewState = (data) => {
-        this.setState({
-            previewState: data
-        });
-    };
-
-    showError = (title, body, errorId, stackTrace, canClose, ignoreIfErrorShowing = false) => {
-        if (ignoreIfErrorShowing && this.state.showError && !this.state.canClose) return; // Ignore (used for websocket errors as they come after)
-        this.setState({showError: true}, () => {
-            this.errorModal.current.setState({
-                title: title,
-                body: body,
-                errorId: errorId,
-                stackTrace: stackTrace,
-                canClose: canClose
-            });
-        });
-    };
-
-    generateSettings = () => {
-        let self = this;
-        api.send({type: "flow", method: "generate_settings"}, this.settingsProgress.pipe(function (message) {
-            if (message.type === "error") {
-                if (!message.cancelled) {
-                    console.info("Failed to get settings: " + message.error);
-                    self.showError("Failed to get world settings", message.error, message.errorId, message.stackTrace, false);
-                }
-            } else if (message.type === "response") {
-                self.setState({
-                    settings: message.output
-                });
-
-                if (self.state.requestPreview) {
-                    // Start preview
-                    self.generatePreview();
-                }
-            } else {
-                console.info("Unknown response", message);
-            }
-        }));
-    };
-
-    generatePreview = () => {
-        let self = this;
-        api.send({type: "flow", method: "generate_preview"}, this.previewProgress.pipe(function (message) {
-            if (message.type === "error") {
-                if (!message.cancelled) {
-                    console.info("Failed to preview: " + message.error);
-                    self.showError("Failed to render preview", message.error, message.errorId, message.stackTrace, true); // Preview isn't required
-                }
-            } else if (message.type === "response") {
-                // Doesn't need to do anything, as progress.js will mark as complete :)
-                // Decode minX, minZ, maxX, maxZ
-                let base64 = message.output;
-
-                if (base64.length > 0) {
-                    let buffer = decode(base64);
-                    let worlds = [];
-                    let dataView = new DataView(buffer);
-                    let bufferIndex = 0;
-                    let worldCount = dataView.getInt32(bufferIndex, true);
-                    bufferIndex += 4;
-
-                    for (let i = 0; i < worldCount; i++) {
-                        let worldIndex = dataView.getUint8(bufferIndex);
-                        bufferIndex += 1;
-
-                        // World Index
-                        worlds[worldIndex] = {};
-                        worlds[worldIndex].minX = dataView.getInt32(bufferIndex, true);
-                        bufferIndex += 4;
-                        worlds[worldIndex].minZ = dataView.getInt32(bufferIndex, true);
-                        bufferIndex += 4;
-                        worlds[worldIndex].maxX = dataView.getInt32(bufferIndex, true);
-                        bufferIndex += 4;
-                        worlds[worldIndex].maxZ = dataView.getInt32(bufferIndex, true);
-                        bufferIndex += 4;
-                        let regionCount = dataView.getInt32(bufferIndex, true);
-                        bufferIndex += 4;
-                        bufferIndex += regionCount * (8 + 128); // Skip region bytes
-                    }
-
-                    self.setState({previewData: worlds});
-                } else {
-                    // Set to empty data (meaning preview is streamed)
-                    self.setState({previewData: []});
-                }
-            } else {
-                console.info("Unknown response", message);
-            }
-        }));
-    };
-
-    cancelTask = (callback) => {
-        api.send({type: "flow", method: "cancel"}, function (message) {
-            if (callback) {
-                callback();
-            }
-        });
-    };
-
-    setStage = (stage) => this.setState({stage: stage});
-
-    generateIssueLink = (error, stackTrace = undefined) => {
-        let version = ((window.chunker && window.chunker.version) || "unknown") + "-" + ((window.chunker && window.chunker.gitVersion) || "unknown");
-        let platform = (window.chunker && window.chunker.platform) || "";
-
-        // Version info
-        let inputVersion;
-        if (this.state.inputType) {
-            inputVersion = (this.state.inputType.id.startsWith("JAVA_") ? "Java " : "Bedrock ") + getVersionName(this.state.inputType.id);
-        } else {
-            inputVersion = "N/A";
-        }
-        let outputVersion;
-        if (this.state.outputType) {
-            outputVersion = (this.state.outputType.id.startsWith("JAVA_") ? "Java " : "Bedrock ") + getVersionName(this.state.outputType.id);
-        } else {
-            outputVersion = "N/A";
-        }
-        let description = (error ? encodeURIComponent("Error Displayed: `" + error + "`\n" + (stackTrace ? "Stack Trace: \n```\n" + stackTrace + "```\n" : "")) : "");
-
-        return "https://github.com/HiveGamesOSS/Chunker/issues/new?assignees=&labels=Conversion+Bug&projects=&template=world_conversion_issue.yml" +
-            "&version=" + version +
-            "&platform=" + platform +
-            "&input_version=" + inputVersion +
-            "&output_version=" + outputVersion +
-            "&description=" + description;
-    };
-
-    render() {
-        let Screen = this.state.screen;
-        return (
-            <React.Fragment>
-                <Header/>
-                {this.state.showError &&
-                    <ErrorDisplay ref={this.errorModal}
-                                  app={this}
-                                  close={() => this.setState({showError: false})}/>
-                }
-                <div className="wrapper">
-                    <main id="content">
-                        <StepDisplay stage={this.state.stage}/>
-                        <Screen app={this} ref={this.screen}/>
-                    </main>
-                </div>
-                <Footer app={this}/>
-            </React.Fragment>
-        );
+// Matches the structure consumed by worldSettingsTab + dimensionPruningTab
+// (older versions that use DIMENSIONS = ["OVERWORLD","NETHER","THE_END"]).
+const MOCK_SETTINGS = {
+    dimensions: ['OVERWORLD', 'NETHER', 'THE_END'],
+    settings: {
+        'World Settings': [
+            { name: 'LevelName',  value: 'World', type: 'String'  },
+            { name: 'SpawnX',     value: 0,       type: 'Int32'   },
+            { name: 'SpawnY',     value: 64,      type: 'Int32'   },
+            { name: 'SpawnZ',     value: 0,       type: 'Int32'   },
+            { name: 'Time',       value: 0,       type: 'Int64'   },
+            { name: 'Difficulty', value: 2,       type: 'Int32'   },
+            { name: 'GameType',   value: 0,       type: 'Int32'   },
+        ],
+        'Game Rules': [],
+        'Weather': [],
+        'Misc': [],
     }
-}
+};
 
-export default App;
+// ---------------------------------------------------------------------------
+// Public API object
+// ---------------------------------------------------------------------------
+const api = {
+
+    // Called by selectWorldScreen before starting the flow.
+    setFile: (file, targetVersion) => {
+        pendingFile = file;
+        if (targetVersion) pendingTargetVersion = targetVersion;
+    },
+
+    getFile: () => pendingFile,
+
+    // Main entry point — mirrors the original api.send(obj, replyHandler) signature.
+    send: function (obj, replyHandler) {
+        switch (obj.type) {
+            case 'flow':
+                this._handleFlow(obj, replyHandler);
+                break;
+
+            // settings / mappings calls are all immediately ACK'd;
+            // the actual conversion happens in one shot via 'convert'.
+            case 'settings':
+            case 'mappings':
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+
+            default:
+                if (replyHandler) replyHandler({ type: 'response' });
+        }
+    },
+
+    _handleFlow: function (obj, replyHandler) {
+        switch (obj.method) {
+
+            case 'select_world':
+                // Synchronous mock — hands the app a fake session so it can
+                // navigate through ModeScreen → SettingsScreen → ProcessingScreen.
+                if (replyHandler) replyHandler({
+                    type:   'response',
+                    output: MOCK_SESSION
+                });
+                break;
+
+            case 'generate_settings':
+                // Show the animated bar briefly, then deliver settings.
+                if (replyHandler) {
+                    replyHandler({ type: 'progress_state', continue: true,
+                                   percentage: 0.4, animated: true,
+                                   name: 'Grabbing world information' });
+                    setTimeout(() => {
+                        replyHandler({ type: 'response', output: MOCK_SETTINGS });
+                    }, 400);
+                }
+                break;
+
+            case 'generate_preview':
+                // Return an empty base64 string → app sets previewData = []
+                // (the Leaflet map renders but tiles show as blank, which is fine).
+                if (replyHandler) replyHandler({ type: 'response', output: '' });
+                break;
+
+            case 'convert':
+                this._doConvert(obj, replyHandler);
+                break;
+
+            case 'save':
+                // The actual download is triggered by the <a href> in saveScreen.
+                // We just ACK so the UI transitions to "Saved".
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+
+            case 'cancel':
+                if (replyHandler) replyHandler({ type: 'response' });
+                break;
+
+            default:
+                if (replyHandler) replyHandler({ type: 'response' });
+        }
+    },
+
+    _doConvert: async function (obj, replyHandler) {
+        const file = pendingFile;
+
+        if (!file) {
+            if (replyHandler) replyHandler({
+                type:  'error',
+                error: 'No file selected. Please go back and select a world file.'
+            });
+            return;
+        }
+
+        // --- progress: upload starting ---
+        if (replyHandler) replyHandler({
+            type: 'progress_state', continue: true,
+            percentage: 0.05, animated: true,
+            name: 'Uploading world'
+        });
+
+        const formData = new FormData();
+
+        // Pass the File object directly — do NOT re-wrap in new Blob().
+        // Re-wrapping loses the filename, which can confuse multipart parsing
+        // on the backend and causes silent conversion failures.
+        formData.append('file', file, file.name || 'world.zip');
+        formData.append('targetVersion', obj.outputType || pendingTargetVersion);
+
+        const controller = new AbortController();
+        // 5-minute timeout for large worlds on slow connections.
+        const timeout = setTimeout(() => controller.abort(), 300_000);
+
+        try {
+            // --- progress: waiting for server ---
+            if (replyHandler) replyHandler({
+                type: 'progress_state', continue: true,
+                percentage: 0.3, animated: true,
+                name: 'Converting world'
+            });
+
+            const response = await fetch(`${BACKEND_URL}/api/convert`, {
+                method:      'POST',
+                body:        formData,
+                signal:      controller.signal,
+                credentials: 'omit',
+                // Do NOT manually set Content-Type when sending FormData —
+                // the browser must set it (with the multipart boundary) itself.
+            });
+
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                // Try to surface whatever error text the backend returned.
+                const text = await response.text().catch(() => '');
+                throw new Error(
+                    `Server responded ${response.status}` +
+                    (text ? `: ${text.slice(0, 200)}` : '')
+                );
+            }
+
+            // --- progress: downloading result ---
+            if (replyHandler) replyHandler({
+                type: 'progress_state', continue: true,
+                percentage: 0.9, animated: false,
+                name: 'Preparing download'
+            });
+
+            const blob        = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+
+            // Final message — no 'continue' flag, so progress.pipe() forwards
+            // it to the handler in processingScreen, which sets convertResult
+            // and navigates to saveScreen.
+            if (replyHandler) replyHandler({
+                type:   'response',
+                output: {
+                    download:           downloadUrl,
+                    anonymousId:        '',
+                    missingIdentifiers: []
+                }
+            });
+
+        } catch (error) {
+            clearTimeout(timeout);
+            console.error('Conversion error:', error);
+
+            const msg = error.name === 'AbortError'
+                ? 'Request timed out after 5 minutes. Try a smaller world or use Firefox.'
+                : error.message;
+
+            if (replyHandler) replyHandler({ type: 'error', error: msg });
+        }
+    },
+
+    // These three are called by selectWorldScreen / index.js.
+    connect:     (cb) => { if (cb) cb(); },
+    isConnected: ()   => true,
+    close:       ()   => {}
+};
+
+export default api;
