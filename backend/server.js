@@ -140,7 +140,10 @@ app.post('/api/convert', upload.single('file'), async (req, res) => {
             console.log('Using nested world directory:', worldDir);
         }
 
-        const command = `timeout 300 java -jar "${jarPath}" -i "${worldDir}" -o "${outputDir}" -f "${targetVersion}"`;
+        // JVM heap settings optimized for 512 MB container:
+        // -Xmx384m: Maximum heap size (384 MB, leaving ~128 MB for other processes)
+        // -Xms128m: Initial heap size (faster startup, reduces allocation overhead)
+        const command = `timeout 300 java -Xmx384m -Xms128m -jar "${jarPath}" -i "${worldDir}" -o "${outputDir}" -f "${targetVersion}"`;
         
         console.log('Executing:', command);
         
